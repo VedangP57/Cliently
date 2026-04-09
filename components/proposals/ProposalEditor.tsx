@@ -28,6 +28,7 @@ interface ProposalEditorProps {
 export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
+  const [title, setTitle] = useState(proposal.title ?? '')
   const [clientId, setClientId] = useState(proposal.client_id ?? '')
   const [status, setStatus] = useState(proposal.status)
   const [validUntil, setValidUntil] = useState(proposal.valid_until ?? '')
@@ -35,8 +36,16 @@ export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
   const [slug, setSlug] = useState(proposal.slug ?? '')
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastSavedContent = useRef(proposal.content ?? '')
+  const lastSavedMeta = useRef({
+    title: proposal.title ?? '',
+    clientId: proposal.client_id ?? '',
+    status: proposal.status,
+    validUntil: proposal.valid_until ?? '',
+    totalAmount: proposal.total_amount ?? 0,
+  })
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Underline,
@@ -54,10 +63,18 @@ export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
   const saveContent = useCallback(async () => {
     if (!editor) return
     const content = editor.getHTML()
-    if (content === lastSavedContent.current) return
+    const metaUnchanged =
+      title === lastSavedMeta.current.title &&
+      clientId === lastSavedMeta.current.clientId &&
+      status === lastSavedMeta.current.status &&
+      validUntil === lastSavedMeta.current.validUntil &&
+      totalAmount === lastSavedMeta.current.totalAmount
+
+    if (content === lastSavedContent.current && metaUnchanged) return
 
     setSaving(true)
     const result = await updateProposalAction(proposal.id, {
+      title,
       content,
       client_id: clientId || undefined,
       status,
@@ -70,8 +87,9 @@ export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
       toast({ title: 'Save failed', description: result.error, variant: 'destructive' })
     } else {
       lastSavedContent.current = content
+      lastSavedMeta.current = { title, clientId, status, validUntil, totalAmount }
     }
-  }, [editor, proposal.id, clientId, status, validUntil, totalAmount, toast])
+  }, [editor, proposal.id, title, clientId, status, validUntil, totalAmount, toast])
 
   // Auto-save every 30s
   useEffect(() => {
@@ -83,6 +101,7 @@ export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
     if (!editor) return
     setSaving(true)
     const result = await updateProposalAction(proposal.id, {
+      title,
       content: editor.getHTML(),
       client_id: clientId || undefined,
       status,
@@ -91,7 +110,11 @@ export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
     })
     setSaving(false)
     if (result.error) toast({ title: 'Error', description: result.error, variant: 'destructive' })
-    else { lastSavedContent.current = editor.getHTML(); toast({ title: 'Saved' }) }
+    else {
+      lastSavedContent.current = editor.getHTML()
+      lastSavedMeta.current = { title, clientId, status, validUntil, totalAmount }
+      toast({ title: 'Saved' })
+    }
   }
 
   async function handleGenerateLink() {
@@ -134,6 +157,10 @@ export function ProposalEditor({ proposal, clients }: ProposalEditorProps) {
       {/* Right Sidebar */}
       <div className="space-y-4">
         <div className="rounded-lg border p-4 space-y-4">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Proposal title" />
+          </div>
           <div className="space-y-2">
             <Label>Client</Label>
             <Select

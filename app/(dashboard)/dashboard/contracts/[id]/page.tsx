@@ -1,28 +1,44 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import { createContractAction } from '@/lib/actions/contracts'
 import { ContractEditor } from '@/components/contracts/ContractEditor'
 import { PageHeader } from '@/components/shared/PageHeader'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { generateSlug } from '@/lib/utils'
 import type { Contract, Client, Project } from '@/types'
 
-export default async function ContractEditorPage({ params }: { params: { id: string } }) {
+export default async function ContractEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   // Handle "new" route
-  if (params.id === 'new') {
-    const result = await createContractAction({ title: 'Untitled Contract', status: 'draft' })
-    if (result.data) redirect(`/dashboard/contracts/${result.data.id}`)
+  if (id === 'new') {
+    await ensureProfile(user)
+    const title = 'Untitled Contract'
+    const { data: created } = await supabase
+      .from('contracts')
+      .insert({
+        title,
+        status: 'draft',
+        content: '',
+        slug: generateSlug(title),
+        user_id: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (created?.id) redirect(`/dashboard/contracts/${created.id}`)
     notFound()
   }
 
   const [contractRes, clientsRes, projectsRes] = await Promise.all([
-    supabase.from('contracts').select('*').eq('id', params.id).eq('user_id', user!.id).single(),
-    supabase.from('clients').select('*').eq('user_id', user!.id).order('name'),
-    supabase.from('projects').select('*').eq('user_id', user!.id).order('title'),
+    supabase.from('contracts').select('*').eq('id', id).eq('user_id', user.id).single(),
+    supabase.from('clients').select('*').eq('user_id', user.id).order('name'),
+    supabase.from('projects').select('*').eq('user_id', user.id).order('title'),
   ])
 
   if (!contractRes.data) notFound()

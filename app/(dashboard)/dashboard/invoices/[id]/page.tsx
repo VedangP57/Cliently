@@ -1,27 +1,52 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import { createInvoiceAction } from '@/lib/actions/invoices'
 import InvoiceBuilder from '@/components/invoices/InvoiceBuilder'
 import { PageHeader } from '@/components/shared/PageHeader'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { generateSlug } from '@/lib/utils'
 import type { Invoice, Client, Project } from '@/types'
 
-export default async function InvoiceBuilderPage({ params }: { params: { id: string } }) {
+export default async function InvoiceBuilderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  if (params.id === 'new') {
-    const result = await createInvoiceAction({ status: 'draft', tax_rate: 0, discount: 0, invoice_number: '', issue_date: '', due_date: '', notes: '' })
-    if (result.data) redirect(`/dashboard/invoices/${result.data.id}`)
+  if (id === 'new') {
+    await ensureProfile(user)
+    const { count } = await supabase
+      .from('invoices')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    const invoiceNumber = `INV-${String((count ?? 0) + 1).padStart(4, '0')}`
+
+    const { data: created } = await supabase
+      .from('invoices')
+      .insert({
+        user_id: user.id,
+        status: 'draft',
+        tax_rate: 0,
+        discount: 0,
+        invoice_number: invoiceNumber,
+        issue_date: null,
+        due_date: null,
+        notes: null,
+        slug: generateSlug('invoice'),
+      })
+      .select('id')
+      .single()
+
+    if (created?.id) redirect(`/dashboard/invoices/${created.id}`)
     notFound()
   }
 
   const [invoiceRes, clientsRes, projectsRes] = await Promise.all([
-    supabase.from('invoices').select('*, invoice_items(*)').eq('id', params.id).eq('user_id', user!.id).single(),
-    supabase.from('clients').select('*').eq('user_id', user!.id).order('name'),
-    supabase.from('projects').select('*').eq('user_id', user!.id).order('title'),
+    supabase.from('invoices').select('*, invoice_items(*)').eq('id', id).eq('user_id', user.id).single(),
+    supabase.from('clients').select('*').eq('user_id', user.id).order('name'),
+    supabase.from('projects').select('*').eq('user_id', user.id).order('title'),
   ])
 
   if (!invoiceRes.data) notFound()

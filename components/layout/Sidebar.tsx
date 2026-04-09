@@ -18,9 +18,22 @@ import {
   Settings,
   ChevronsLeft,
   ChevronsRight,
+  LogOut,
+  User,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { logoutAction } from '@/lib/actions/auth'
+import { getInitials } from '@/lib/utils'
 
 const navItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -37,14 +50,27 @@ const navItems = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  user: {
+    full_name: string | null
+    email: string
+    avatar_url: string | null
+  }
+}
+
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col border-r bg-card h-screen sticky top-0 transition-all duration-300',
+        'hidden lg:flex flex-col border-r bg-[#F8FAFD] h-screen sticky top-0 transition-all duration-300',
         collapsed ? 'w-[68px]' : 'w-[240px]'
       )}
     >
@@ -70,18 +96,20 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
         {navItems.map((item) => {
-          const isActive =
+          const isActive = mounted && (
             item.href === '/dashboard'
               ? pathname === '/dashboard'
               : pathname.startsWith(item.href)
+          )
           return (
             <Link
               key={item.href}
               href={item.href}
+              suppressHydrationWarning
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary text-[#D3E3FD]'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                 collapsed && 'justify-center px-2'
               )}
@@ -93,6 +121,64 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      <div className="border-t p-2">
+        <div className={cn('flex items-center gap-2', collapsed ? 'justify-center' : '')}>
+          <div className={cn(collapsed ? '' : 'flex-1 min-w-0')}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    'rounded-lg',
+                    collapsed ? 'h-10 w-10 px-0 justify-center' : 'min-h-12 h-auto w-full justify-start px-2 py-1.5 min-w-0'
+                  )}
+                >
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name ?? 'User'} />
+                    <AvatarFallback>
+                      {user.full_name ? getInitials(user.full_name) : <User className="h-4 w-4" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!collapsed && (
+                    <div className="ml-2 flex min-w-0 flex-col items-start pr-1">
+                      <span className="w-full truncate text-sm font-medium leading-tight pr-3">{user.full_name ?? 'User'}</span>
+                      <span className="w-full truncate text-xs text-muted-foreground leading-tight">{user.email}</span>
+                    </div>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 translate-x-2">
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <form action={logoutAction} className="w-full">
+                    <button type="submit" className="flex w-full items-center gap-2">
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </form>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  {user.email}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {!collapsed && (
+            <div className="shrink-0">
+              <ThemeToggle />
+            </div>
+          )}
+        </div>
+      </div>
     </aside>
   )
 }

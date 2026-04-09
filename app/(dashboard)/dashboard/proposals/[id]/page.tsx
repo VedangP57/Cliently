@@ -1,27 +1,44 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import { createProposalAction } from '@/lib/actions/proposals'
 import { ProposalEditor } from '@/components/proposals/ProposalEditor'
 import { PageHeader } from '@/components/shared/PageHeader'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { generateSlug } from '@/lib/utils'
 import type { Proposal, Client } from '@/types'
 
-export default async function ProposalEditorPage({ params }: { params: { id: string } }) {
+export default async function ProposalEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   // Handle "new" route
-  if (params.id === 'new') {
-    const result = await createProposalAction({ title: 'Untitled Proposal', status: 'draft', content: '', total_amount: 0 })
-    if (result.data) redirect(`/dashboard/proposals/${result.data.id}`)
+  if (id === 'new') {
+    await ensureProfile(user)
+    const title = 'Untitled Proposal'
+    const { data: created } = await supabase
+      .from('proposals')
+      .insert({
+        title,
+        status: 'draft',
+        content: '',
+        total_amount: 0,
+        slug: generateSlug(title),
+        user_id: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (created?.id) redirect(`/dashboard/proposals/${created.id}`)
     notFound()
   }
 
   const [proposalRes, clientsRes] = await Promise.all([
-    supabase.from('proposals').select('*').eq('id', params.id).eq('user_id', user!.id).single(),
-    supabase.from('clients').select('*').eq('user_id', user!.id).order('name'),
+    supabase.from('proposals').select('*').eq('id', id).eq('user_id', user.id).single(),
+    supabase.from('clients').select('*').eq('user_id', user.id).order('name'),
   ])
 
   if (!proposalRes.data) notFound()

@@ -232,10 +232,10 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
           pagination={{
             pageSize: 10,
             showSizeChanger: false,
-            position: ['bottomCenter'],
+            placement: ['bottomCenter'],
             className: 'ant-pagination-mini',
             hideOnSinglePage: true,
-          } as any}
+          }}
           scroll={{ x: 800 }}
         />
       </div>

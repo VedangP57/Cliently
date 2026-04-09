@@ -7,6 +7,7 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
@@ -28,14 +29,22 @@ interface ContractEditorProps {
 export function ContractEditor({ contract, clients, projects }: ContractEditorProps) {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
+  const [title, setTitle] = useState(contract.title ?? '')
   const [clientId, setClientId] = useState(contract.client_id ?? '')
   const [projectId, setProjectId] = useState(contract.project_id ?? '')
   const [status, setStatus] = useState(contract.status)
   const [slug, setSlug] = useState(contract.slug ?? '')
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastSavedContent = useRef(contract.content ?? '')
+  const lastSavedMeta = useRef({
+    title: contract.title ?? '',
+    clientId: contract.client_id ?? '',
+    projectId: contract.project_id ?? '',
+    status: contract.status,
+  })
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Underline,
@@ -53,10 +62,17 @@ export function ContractEditor({ contract, clients, projects }: ContractEditorPr
   const saveContent = useCallback(async () => {
     if (!editor) return
     const content = editor.getHTML()
-    if (content === lastSavedContent.current) return
+    const metaUnchanged =
+      title === lastSavedMeta.current.title &&
+      clientId === lastSavedMeta.current.clientId &&
+      projectId === lastSavedMeta.current.projectId &&
+      status === lastSavedMeta.current.status
+
+    if (content === lastSavedContent.current && metaUnchanged) return
 
     setSaving(true)
     const result = await updateContractAction(contract.id, {
+      title,
       content,
       client_id: clientId || undefined,
       project_id: projectId || undefined,
@@ -68,8 +84,9 @@ export function ContractEditor({ contract, clients, projects }: ContractEditorPr
       toast({ title: 'Save failed', description: result.error, variant: 'destructive' })
     } else {
       lastSavedContent.current = content
+      lastSavedMeta.current = { title, clientId, projectId, status }
     }
-  }, [editor, contract.id, clientId, projectId, status, toast])
+  }, [editor, contract.id, title, clientId, projectId, status, toast])
 
   // Auto-save every 30s
   useEffect(() => {
@@ -81,6 +98,7 @@ export function ContractEditor({ contract, clients, projects }: ContractEditorPr
     if (!editor) return
     setSaving(true)
     const result = await updateContractAction(contract.id, {
+      title,
       content: editor.getHTML(),
       client_id: clientId || undefined,
       project_id: projectId || undefined,
@@ -91,6 +109,7 @@ export function ContractEditor({ contract, clients, projects }: ContractEditorPr
       toast({ title: 'Error', description: result.error, variant: 'destructive' })
     } else {
       lastSavedContent.current = editor.getHTML()
+      lastSavedMeta.current = { title, clientId, projectId, status }
       toast({ title: 'Saved' })
     }
   }
@@ -136,6 +155,10 @@ export function ContractEditor({ contract, clients, projects }: ContractEditorPr
       {/* Right Sidebar */}
       <div className="space-y-4">
         <div className="rounded-lg border p-4 space-y-4">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Contract title" />
+          </div>
           <div className="space-y-2">
             <Label>Client</Label>
             <Select
