@@ -72,7 +72,7 @@ export function ProposalTable({ proposals }: ProposalTableProps) {
               {proposals.map((proposal) => (
                 <TableRow key={proposal.id}>
                   <TableCell>
-                    <Link href={`/dashboard/proposals/${proposal.id}`} className="font-medium hover:underline">{proposal.title}</Link>
+                    <Link href={`/dashboard/proposals/${proposal.id}`} className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!">{proposal.title}</Link>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">{proposal.client?.name ?? '—'}</TableCell>
                   <TableCell><StatusBadge status={proposal.status} /></TableCell>

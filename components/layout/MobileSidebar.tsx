@@ -65,7 +65,7 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
   }, [])
 
   return (
-    <div className="flex h-full flex-col bg-[#F8FAFD]">
+    <div className="flex h-full flex-col bg-[#F8FAFD] dark:bg-[#0a0a0a]">
       <div className="flex items-center h-16 px-4 border-b">
         <Link href="/dashboard" className="font-bold text-xl">
           Cliently
@@ -86,7 +86,7 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary text-[#D3E3FD]'
+                  ? 'bg-[#5e5cc5] text-white'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
@@ -122,14 +122,14 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <form action={logoutAction} className="w-full">
+                <form action={logoutAction} className="w-full">
+                  <DropdownMenuItem asChild>
                     <button type="submit" className="flex w-full items-center gap-2">
                       <LogOut className="h-4 w-4" />
                       Log out
                     </button>
-                  </form>
-                </DropdownMenuItem>
+                  </DropdownMenuItem>
+                </form>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
                   {user.email}

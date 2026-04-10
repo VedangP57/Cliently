@@ -91,7 +91,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       render: (text, record) => (
         <Link
           href={`/dashboard/projects/${record.id}`}
-          className="font-medium hover:underline text-[#0f172a]"
+          className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!"
         >
           {text}
         </Link>
@@ -101,7 +101,6 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       title: 'Client',
       key: 'client',
       align: 'center',
-      responsive: ['md'],
       render: (_, record) => {
         const client = clients.find((c) => c.id === record.client_id)
         return <span className="text-muted-foreground">{client?.name ?? '—'}</span>
@@ -119,7 +118,6 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'deadline',
       key: 'deadline',
       align: 'center',
-      responsive: ['sm'],
       render: (date) => <span className="text-muted-foreground">{formatDate(date)}</span>,
     },
     {
@@ -127,7 +125,6 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'budget',
       key: 'budget',
       align: 'center',
-      responsive: ['lg'],
       render: (budget) => budget ? formatCurrency(budget) : '—',
     },
     {
@@ -214,7 +211,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
           <AntdButton 
             type="primary" 
             onClick={openCreate} 
-            className="h-8 rounded-full bg-[#0f172a] hover:bg-[#1e293b]! border-none flex items-center gap-2 px-4 text-sm"
+            className="h-8 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-4 text-sm text-primary-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             New Project

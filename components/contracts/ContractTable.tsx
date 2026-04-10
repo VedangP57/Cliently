@@ -86,7 +86,7 @@ export function ContractTable({ contracts }: ContractTableProps) {
                   <TableCell>
                     <Link
                       href={`/dashboard/contracts/${contract.id}`}
-                      className="font-medium hover:underline"
+                      className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!"
                     >
                       {contract.title}
                     </Link>

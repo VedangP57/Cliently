@@ -27,8 +27,9 @@ import type { Task, TimeLog } from '@/types'
 export default async function ProjectDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createClient()
   const {
     data: { user },
@@ -37,7 +38,7 @@ export default async function ProjectDetailPage({
   const { data: project } = await supabase
     .from('projects')
     .select('*, client:clients(name)')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user!.id)
     .single()
 
@@ -47,19 +48,19 @@ export default async function ProjectDetailPage({
     supabase
       .from('tasks')
       .select('*')
-      .eq('project_id', params.id)
+      .eq('project_id', id)
       .eq('user_id', user!.id)
       .order('position'),
     supabase
       .from('time_logs')
       .select('*')
-      .eq('project_id', params.id)
+      .eq('project_id', id)
       .eq('user_id', user!.id)
       .order('date', { ascending: false }),
     supabase
       .from('expenses')
       .select('*')
-      .eq('project_id', params.id)
+      .eq('project_id', id)
       .eq('user_id', user!.id)
       .order('date', { ascending: false }),
   ])

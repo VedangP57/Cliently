@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { ThemeProvider } from '@/components/shared/ThemeProvider'
+import { AppThemeProvider } from '@/components/shared/AppThemeProvider'
+import { DisableServiceWorkerInDev } from '@/components/shared/DisableServiceWorkerInDev'
 import '@/app/globals.css'
 import { AntdRegistry } from '@ant-design/nextjs-registry'
-import { ConfigProvider } from 'antd'
+import { AntdThemeProvider } from '@/components/shared/AntdThemeProvider'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -18,37 +19,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased" suppressHydrationWarning>
-        <AntdRegistry>
-          <ConfigProvider
-            theme={{
-              token: {
-                colorPrimary: '#0f172a',
-                fontFamily: 'Avenir LT Pro',
-                borderRadius: 6,
-                colorBgMask: 'rgba(0, 0, 0, 0.3)',
-              },
-              components: {
-                Table: {
-                  headerBg: '#f8fafc',
-                  headerColor: '#111827',
-                  headerSplitColor: 'transparent',
-                  cellPaddingBlock: 12,
-                  cellPaddingBlockSM: 8,
-                },
-              },
-            }}
-          >
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-              nonce=""
-            >
+        <DisableServiceWorkerInDev />
+        <AppThemeProvider defaultTheme="system">
+          <AntdRegistry>
+            <AntdThemeProvider>
               {children}
-            </ThemeProvider>
-          </ConfigProvider>
-        </AntdRegistry>
+            </AntdThemeProvider>
+          </AntdRegistry>
+        </AppThemeProvider>
       </body>
     </html>
   )

@@ -260,7 +260,7 @@ export function ClientModal({ open, onOpenChange, client }: ClientModalProps) {
                 htmlType="submit"
                 loading={loading}
                 size="large"
-                className="bg-[#0f172a] border-[#0f172a] hover:bg-[#1e293b]! hover:border-[#1e293b]!"
+                className="bg-primary border-primary hover:bg-primary/90! hover:border-primary/90! text-primary-foreground"
               >
                 {isEditing ? 'Update Client' : 'Create Client'}
               </Button>

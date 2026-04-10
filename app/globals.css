@@ -98,51 +98,49 @@
   font-display: swap;
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 241 42% 57%;          /* #5e5cc5 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 241 42% 57%;             /* #5e5cc5 */
+  --radius: 0.5rem;
+}
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
+.dark {
+  --background: 0 0% 4%;           /* #0a0a0a */
+  --foreground: 0 0% 95%;          /* #f2f2f2 */
+  --card: 0 0% 10.2%;              /* #1a1a1a */
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 10.2%;           /* #1a1a1a */
+  --popover-foreground: 0 0% 95%;
+  --primary: 241 42% 57%;          /* #5e5cc5 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 12.2%;         /* #1f1f1f */
+  --secondary-foreground: 0 0% 95%;
+  --muted: 0 0% 12.2%;             /* #1f1f1f */
+  --muted-foreground: 0 0% 64%;    /* #a3a3a3 */
+  --accent: 0 0% 12.2%;            /* #1f1f1f */
+  --accent-foreground: 0 0% 95%;
+  --destructive: 0 62.8% 50%;
+  --destructive-foreground: 0 0% 95%;
+  --border: 0 0% 16%;              /* #292929 */
+  --input: 0 0% 16%;
+  --ring: 241 42% 57%;             /* #5e5cc5 */
 }
 
 @layer base {
@@ -232,6 +230,10 @@
   text-align: left !important;
 }
 
+.dark .ant-table-tbody .ant-table-row:last-child .ant-table-cell {
+  border-bottom: none !important;
+}
+
 .ant-table-tbody .ant-table-row:last-child .ant-table-cell:last-child {
   border-bottom-right-radius: 0.5rem;
 }
@@ -240,9 +242,12 @@
   border-bottom-left-radius: 0.5rem;
 }
 
+.user-table .ant-table-wrapper,
+.user-table .ant-table,
+.user-table .ant-table-container,
 .ant-spin-container .ant-table {
-  border-bottom-left-radius: 0.5rem;
-  border-bottom-right-radius: 0.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
 .ant-menu-item-selected {
@@ -253,13 +258,6 @@
   background: #f8fafc !important;
 }
 
-.ant-table-cell.ant-table-cell-row-hover {
-  background-color: #f1f5f9 !important;
-}
-
-.ant-table-wrapper .ant-table-tbody .ant-table-row.ant-table-row-selected>.ant-table-cell {
-  background-color: #f1f5f9 !important;
-}
 
 .ant-tabs-top>.ant-tabs-nav::before,
 .ant-tabs-bottom>.ant-tabs-nav::before,
@@ -278,37 +276,9 @@
   align-items: center !important;
 }
 
-/* Globally disable all Ant Design and Radix UI transitions/animations */
-.ant-modal,
-.ant-modal-mask,
-.ant-modal-wrap,
-.ant-select-dropdown,
-.ant-dropdown,
-.ant-tooltip,
-.ant-popover,
-.ant-message-notice,
-[data-state="open"],
-[data-state="closed"],
-[class^="ant-motion"],
-[class*=" ant-motion"],
-[class^="ant-zoom"],
-[class*=" ant-zoom"],
-[class^="ant-fade"],
-[class*=" ant-fade"],
-[class^="ant-slide"],
-[class*=" ant-slide"],
-[class^="ant-move"],
-[class*=" ant-move"],
-[class*="-leave"],
-[class*="-leave-active"] {
-  transition: none !important;
-  animation: none !important;
-}
-
+/* Disable Radix UI transitions/animations */
 [data-state="open"]>.DialogContent,
-[data-state="open"]>.ant-modal-content,
-[data-state="closed"]>.DialogContent,
-[data-state="closed"]>.ant-modal-content {
+[data-state="closed"]>.DialogContent {
   animation: none !important;
 }
 
@@ -317,6 +287,21 @@
   border-radius: 9999px !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
+}
+
+/* Fix Ant Design Select dropdown under Tailwind v4 preflight */
+.ant-select-dropdown {
+  pointer-events: auto !important;
+  z-index: 1050 !important;
+}
+
+.ant-select-dropdown .ant-select-item {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.clients-status-select-dropdown {
+  z-index: 2100 !important;
 }
 
 .ant-pagination-mini .ant-pagination-item {

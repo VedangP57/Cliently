@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation'
 import {
   Table,
   Tooltip,
-  Space,
   Input,
   Select as AntdSelect,
   Button as AntdButton,
-  type TableProps
+  type TableProps,
+  type SelectProps,
 } from 'antd'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ClientModal } from '@/components/clients/ClientModal'
@@ -23,8 +23,10 @@ import {
   Search,
   Pencil,
   Trash2,
-  Eye,
+  ExternalLink,
   Users,
+  SquarePen,
+  Trash,
 } from 'lucide-react'
 import type { Client } from '@/types'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -34,9 +36,19 @@ interface ClientTableProps {
   clients: Client[]
 }
 
+type StatusFilter = 'all' | 'active' | 'inactive' | 'lead' | 'archived'
+
+const STATUS_OPTIONS: NonNullable<SelectProps<StatusFilter>['options']> = [
+  { label: 'All Status', value: 'all' },
+  { label: 'Active', value: 'active' },
+  { label: 'Inactive', value: 'inactive' },
+  { label: 'Lead', value: 'lead' },
+  { label: 'Archived', value: 'archived' },
+] 
+
 export function ClientTable({ clients }: ClientTableProps) {
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -52,8 +64,9 @@ export function ClientTable({ clients }: ClientTableProps) {
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         (c.company ?? '').toLowerCase().includes(search.toLowerCase()) ||
         (c.email ?? '').toLowerCase().includes(search.toLowerCase())
+      const normalizedStatus = String(c.status ?? '').trim().toLowerCase().replace(/\s+/g, '_')
       const matchesStatus =
-        statusFilter === 'all' || c.status === statusFilter
+        statusFilter === 'all' || normalizedStatus === statusFilter
       return matchesSearch && matchesStatus
     })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -105,7 +118,7 @@ export function ClientTable({ clients }: ClientTableProps) {
       render: (text, record) => (
         <Link
           href={`/dashboard/clients/${record.id}`}
-          className="font-medium hover:underline text-[#0f172a]"
+          className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!"
         >
           {text}
         </Link>
@@ -116,7 +129,6 @@ export function ClientTable({ clients }: ClientTableProps) {
       dataIndex: 'company',
       key: 'company',
       align: 'center',
-      responsive: ['md'],
       render: (text) => text || '—',
     },
     {
@@ -124,7 +136,6 @@ export function ClientTable({ clients }: ClientTableProps) {
       dataIndex: 'email',
       key: 'email',
       align: 'center',
-      responsive: ['md'],
       render: (text) => text || '—',
     },
     {
@@ -132,7 +143,6 @@ export function ClientTable({ clients }: ClientTableProps) {
       dataIndex: 'phone',
       key: 'phone',
       align: 'center',
-      responsive: ['lg'],
       render: (text) => text || '—',
     },
     {
@@ -147,7 +157,6 @@ export function ClientTable({ clients }: ClientTableProps) {
       dataIndex: 'total_earned',
       key: 'total_earned',
       align: 'center',
-      responsive: ['sm'],
       render: (val) => formatCurrency(val),
     },
     {
@@ -156,31 +165,31 @@ export function ClientTable({ clients }: ClientTableProps) {
       width: 140,
       align: 'center',
       render: (_, record) => (
-        <div className="flex items-center justify-center gap-1.5">
-          <Tooltip title="View Details">
+        <div className="flex items-center justify-center gap-1">
+          <Tooltip title="View">
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center text-blue-500 hover:text-blue-600"
-              icon={<Eye className="h-4 w-4" />}
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
+              icon={<ExternalLink className="h-3.5 w-3.5" />}
               onClick={() => router.push(`/dashboard/clients/${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Edit Client">
+          <Tooltip title="Edit">
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center text-amber-500 hover:text-amber-600"
-              icon={<Pencil className="h-4 w-4" />}
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
+              icon={<SquarePen className="h-3.5 w-3.5" />}
               onClick={() => openEdit(record)}
             />
           </Tooltip>
-          <Tooltip title="Delete Client">
+          <Tooltip title="Delete">
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center text-red-500 hover:text-red-600"
-              icon={<Trash2 className="h-4 w-4" />}
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+              icon={<Trash className="h-3.5 w-3.5" />}
               onClick={() => setDeleteId(record.id)}
             />
           </Tooltip>
@@ -212,22 +221,18 @@ export function ClientTable({ clients }: ClientTableProps) {
           </div>
 
           <AntdSelect
-            className="w-[120px] h-8 select-rounded-full"
+            className="w-[130px] h-8 select-rounded-full"
             value={statusFilter}
-            onChange={setStatusFilter}
-            options={[
-              { label: 'All Status', value: 'all' },
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-              { label: 'Lead', value: 'lead' },
-              { label: 'Archived', value: 'archived' },
-            ]}
+            onChange={(value: StatusFilter) => setStatusFilter(value)}
+            optionFilterProp="label"
+            options={STATUS_OPTIONS}
+            classNames={{ popup: { root: 'clients-status-select-dropdown' } }}
           />
 
           <AntdButton
             type="primary"
             onClick={openCreate}
-            className="h-8 rounded-full bg-[#0f172a] hover:bg-[#1e293b]! border-none flex items-center gap-2 px-4 text-sm"
+            className="h-8 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-4 text-sm text-primary-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             New Client

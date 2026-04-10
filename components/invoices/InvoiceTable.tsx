@@ -77,7 +77,7 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
                 return (
                   <TableRow key={invoice.id}>
                     <TableCell>
-                      <Link href={`/dashboard/invoices/${invoice.id}`} className="font-medium hover:underline">{invoice.invoice_number ?? '—'}</Link>
+                      <Link href={`/dashboard/invoices/${invoice.id}`} className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!">{invoice.invoice_number ?? '—'}</Link>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">{invoice.client?.name ?? '—'}</TableCell>
                     <TableCell><StatusBadge status={displayStatus} /></TableCell>

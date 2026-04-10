@@ -6,8 +6,9 @@ import type { Client, Project, Invoice } from '@/types'
 export default async function ClientDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
   const supabase = await createClient()
   const {
     data: { user },
@@ -16,7 +17,7 @@ export default async function ClientDetailPage({
   const { data: client } = await supabase
     .from('clients')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user!.id)
     .single()
 
@@ -26,13 +27,13 @@ export default async function ClientDetailPage({
     supabase
       .from('projects')
       .select('*')
-      .eq('client_id', params.id)
+      .eq('client_id', id)
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false }),
     supabase
       .from('invoices')
       .select('*, invoice_items(amount)')
-      .eq('client_id', params.id)
+      .eq('client_id', id)
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false }),
   ])

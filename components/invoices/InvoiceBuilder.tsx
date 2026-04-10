@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useTransition } from 'react'
+import { useState, useCallback, useEffect, useMemo, useTransition } from 'react'
 import { Plus, Trash2, Clock, Receipt, Copy, Save, Send, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,6 +67,17 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
   const [notes, setNotes] = useState(invoice.notes ?? '')
   const [taxRate, setTaxRate] = useState(invoice.tax_rate ?? 0)
   const [discount, setDiscount] = useState(invoice.discount ?? 0)
+
+  const projectsForClient = useMemo(() => {
+    if (!clientId) return projects
+    return projects.filter((p) => p.client_id === clientId)
+  }, [projects, clientId])
+
+  useEffect(() => {
+    if (!clientId || !projectId) return
+    const p = projects.find((x) => x.id === projectId)
+    if (p && p.client_id !== clientId) setProjectId('')
+  }, [clientId, projectId, projects])
 
   // Calculations
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.rate, 0)
@@ -391,7 +402,16 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
               <Label>Client</Label>
               <Select
                 value={toSelectValue(clientId)}
-                onValueChange={(v) => setClientId(fromSelectValue(v))}
+                onValueChange={(v) => {
+                  const nextClientId = fromSelectValue(v)
+                  setClientId(nextClientId)
+                  setProjectId((currentProjectId) => {
+                    if (!nextClientId) return currentProjectId
+                    const p = projects.find((x) => x.id === currentProjectId)
+                    if (!p || p.client_id !== nextClientId) return ''
+                    return currentProjectId
+                  })
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select client" />
@@ -418,7 +438,7 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={SELECT_NONE}>No project</SelectItem>
-                  {projects.map((project) => (
+                  {projectsForClient.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.title}
                     </SelectItem>

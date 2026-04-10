@@ -4,12 +4,13 @@ import { formatDate } from '@/lib/utils'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { SignContractWidget } from '@/components/contracts/SignContractWidget'
 
-export default async function SharedContractPage({ params }: { params: { slug: string } }) {
+export default async function SharedContractPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const supabase = await createClient()
   const { data: contract } = await supabase
     .from('contracts')
     .select('*, client:clients(name), profile:profiles(full_name, company_name)')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (!contract) notFound()
@@ -41,7 +42,7 @@ export default async function SharedContractPage({ params }: { params: { slug: s
 
         {contract.status === 'sent' && (
           <div className="mt-8 rounded-lg border bg-card p-6">
-            <SignContractWidget slug={params.slug} />
+            <SignContractWidget slug={slug} />
           </div>
         )}
 

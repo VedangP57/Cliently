@@ -4,12 +4,13 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Separator } from '@/components/ui/separator'
 
-export default async function SharedInvoicePage({ params }: { params: { slug: string } }) {
+export default async function SharedInvoicePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const supabase = await createClient()
   const { data: invoice } = await supabase
     .from('invoices')
     .select('*, client:clients(name, email, address), invoice_items(*), profile:profiles(full_name, company_name, address, payment_terms, invoice_notes)')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (!invoice) notFound()

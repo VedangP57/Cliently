@@ -35,7 +35,7 @@ export async function signupAction(formData: {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
@@ -49,7 +49,12 @@ export async function signupAction(formData: {
     return { data: null, error: error.message }
   }
 
-  redirect('/dashboard')
+  // Supabase returns a user with identities=[] when the email already exists
+  if (data.user && data.user.identities && data.user.identities.length === 0) {
+    return { data: null, error: 'An account with this email already exists. Please log in instead.' }
+  }
+
+  return { data: { emailSent: true }, error: null }
 }
 
 export async function logoutAction() {

@@ -7,7 +7,9 @@
       "Bash(bunx tsc:*)",
       "Bash(bunx npm-check-updates:*)",
       "WebSearch",
-      "WebFetch(domain:supabase.com)"
+      "WebFetch(domain:supabase.com)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(wc:*)"
     ]
   }
 }

@@ -16,10 +16,11 @@ import {
 } from '@/components/ui/form'
 import { Card, CardContent } from '@/components/ui/card'
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Mail } from 'lucide-react'
 
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
+  const [emailSent, setEmailSent] = useState(false)
 
   const form = useForm<SignupFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,7 +38,29 @@ export function SignupForm() {
     const result = await signupAction(data)
     if (result?.error) {
       setError(result.error)
+    } else if (result?.data?.emailSent) {
+      setEmailSent(true)
     }
+  }
+
+  if (emailSent) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center text-center space-y-4 py-4">
+            <div className="rounded-full bg-primary/10 p-3">
+              <Mail className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold">Check your email</h3>
+            <p className="text-sm text-muted-foreground">
+              We&apos;ve sent a verification link to{' '}
+              <span className="font-medium text-foreground">{form.getValues('email')}</span>.
+              Please click the link to activate your account.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

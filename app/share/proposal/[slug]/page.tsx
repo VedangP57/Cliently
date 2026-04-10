@@ -4,12 +4,13 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { AcceptProposalButton } from '@/components/proposals/AcceptProposalButton'
 
-export default async function SharedProposalPage({ params }: { params: { slug: string } }) {
+export default async function SharedProposalPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const supabase = await createClient()
   const { data: proposal } = await supabase
     .from('proposals')
     .select('*, client:clients(name), profile:profiles(full_name, company_name)')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (!proposal) notFound()
@@ -42,7 +43,7 @@ export default async function SharedProposalPage({ params }: { params: { slug: s
           <div className="mt-8 rounded-lg border bg-card p-6 text-center">
             <h3 className="text-lg font-semibold mb-2">Accept this proposal?</h3>
             <p className="text-sm text-muted-foreground mb-4">Click below to accept the terms of this proposal.</p>
-            <AcceptProposalButton slug={params.slug} />
+            <AcceptProposalButton slug={slug} />
           </div>
         )}
 
