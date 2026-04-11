@@ -44,8 +44,8 @@ export function getInitials(name: string | null) {
 /** Radix Select forbids `SelectItem value=""` (empty string clears the root value). Use this sentinel for optional fields. */
 export const SELECT_NONE = '__none__' as const
 
-export function toSelectValue(optional: string | undefined) {
-  return optional === '' || optional === undefined ? SELECT_NONE : optional
+export function toSelectValue(optional: string | null | undefined) {
+  return optional === '' || optional === undefined || optional === null ? SELECT_NONE : optional
 }
 
 export function fromSelectValue(value: string) {

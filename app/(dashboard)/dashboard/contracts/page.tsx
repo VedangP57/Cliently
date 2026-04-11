@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { PageHeader } from '@/components/shared/PageHeader'
+
 import { ContractTable } from '@/components/contracts/ContractTable'
 import type { Contract } from '@/types'
 
@@ -19,10 +19,5 @@ export default async function ContractsPage() {
     project: c.project as { title: string } | null ? { title: (c.project as { title: string })?.title } : undefined,
   })) as Contract[]
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Contracts" description={`${contracts.length} contracts`} />
-      <ContractTable contracts={contracts} />
-    </div>
-  )
+  return <ContractTable contracts={contracts} />
 }

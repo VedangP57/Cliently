@@ -1,39 +1,17 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { taskSchema, type TaskFormValues } from '@/lib/validations/task'
 import { createTaskAction, updateTaskAction } from '@/lib/actions/tasks'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Modal, Input, Select, Button, Space, Typography } from 'antd'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { SELECT_NONE, toSelectValue, fromSelectValue } from '@/lib/utils'
 import type { Task, Project } from '@/types'
+
+const { TextArea } = Input
+const { Text } = Typography
 
 interface TaskModalProps {
   open: boolean
@@ -51,6 +29,7 @@ export function TaskModal({
   defaultStatus,
 }: TaskModalProps) {
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
   const { toast } = useToast()
   const isEditing = !!task
 
@@ -58,14 +37,39 @@ export function TaskModal({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(taskSchema) as any,
     defaultValues: {
-      title: task?.title ?? '',
-      project_id: task?.project_id ?? '',
-      description: task?.description ?? '',
-      status: task?.status ?? (defaultStatus as TaskFormValues['status']) ?? 'todo',
-      priority: task?.priority ?? 'medium',
-      due_date: task?.due_date ?? '',
+      title: '',
+      project_id: '',
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      due_date: '',
     },
   })
+
+  // Reset form when task changes
+  useEffect(() => {
+    if (open) {
+      if (task) {
+        form.reset({
+          title: task.title ?? '',
+          project_id: task.project_id ?? '',
+          description: task.description ?? '',
+          status: task.status ?? 'todo',
+          priority: task.priority ?? 'medium',
+          due_date: task.due_date ?? '',
+        })
+      } else {
+        form.reset({
+          title: '',
+          project_id: '',
+          description: '',
+          status: (defaultStatus as TaskFormValues['status']) ?? 'todo',
+          priority: 'medium',
+          due_date: '',
+        })
+      }
+    }
+  }, [task, form, open, defaultStatus])
 
   async function onSubmit(data: TaskFormValues) {
     setLoading(true)
@@ -82,159 +86,154 @@ export function TaskModal({
 
     toast({
       title: isEditing ? 'Task updated' : 'Task created',
+      description: `"${data.title}" has been ${isEditing ? 'updated' : 'created'}.`,
     })
     form.reset()
     onOpenChange(false)
+    router.refresh()
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Task' : 'New Task'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? 'Update task details.' : 'Create a new task.'}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
+    <Modal
+      open={open}
+      onCancel={() => onOpenChange(false)}
+      title={<Typography.Title level={4} style={{ margin: 0 }}>{isEditing ? 'Edit Task' : 'New Task'}</Typography.Title>}
+      footer={null}
+      destroyOnHidden
+      width={600}
+      centered
+      transitionName=""
+      maskTransitionName=""
+    >
+      <div className="mt-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <Text strong>Title *</Text>
+            <Controller
               control={form.control}
               name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Task title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              render={({ field, fieldState }) => (
+                <>
+                  <Input placeholder="Task title" size="large" status={fieldState.error ? 'error' : ''} {...field} />
+                  {fieldState.error && <Text type="danger" style={{ fontSize: '12px' }}>{fieldState.error.message}</Text>}
+                </>
               )}
             />
-            <FormField
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Text strong>Project</Text>
+            <Controller
               control={form.control}
               name="project_id"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project</FormLabel>
-                  <Select
-                    value={toSelectValue(field.value)}
-                    onValueChange={(v) => field.onChange(fromSelectValue(v))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={SELECT_NONE}>No project</SelectItem>
-                      {projects.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                <Select
+                  className="w-full"
+                  size="large"
+                  placeholder="Select a project"
+                  value={field.value || undefined}
+                  onChange={field.onChange}
+                  options={[
+                    { label: 'No Project', value: '' },
+                    ...projects.map((p) => ({
+                      label: p.title,
+                      value: p.id,
+                    })),
+                  ]}
+                />
               )}
             />
-            <FormField
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Text strong>Description</Text>
+            <Controller
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Task details..." rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <TextArea
+                  placeholder="Task details..."
+                  rows={3}
+                  {...field}
+                />
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Text strong>Status</Text>
+              <Controller
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="todo">To Do</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="in_review">In Review</SelectItem>
-                        <SelectItem value="done">Done</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                  <Select
+                    className="w-full"
+                    size="large"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { label: 'To Do', value: 'todo' },
+                      { label: 'In Progress', value: 'in_progress' },
+                      { label: 'In Review', value: 'in_review' },
+                      { label: 'Done', value: 'done' },
+                    ]}
+                  />
                 )}
               />
-              <FormField
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Text strong>Priority</Text>
+              <Controller
                 control={form.control}
                 name="priority"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                  <Select
+                    className="w-full"
+                    size="large"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={[
+                      { label: 'Low', value: 'low' },
+                      { label: 'Medium', value: 'medium' },
+                      { label: 'High', value: 'high' },
+                      { label: 'Urgent', value: 'urgent' },
+                    ]}
+                  />
                 )}
               />
             </div>
-            <FormField
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Text strong>Due Date</Text>
+            <Controller
               control={form.control}
               name="due_date"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Due Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <Input type="date" size="large" {...field} />
               )}
             />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 mt-6">
+            <Space size="middle">
+              <Button onClick={() => onOpenChange(false)} size="large" className="rounded-full">
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? 'Update' : 'Create'}
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                size="large"
+                className="bg-primary border-primary hover:bg-primary/90! hover:border-primary/90! text-primary-foreground rounded-full"
+              >
+                {isEditing ? 'Update Task' : 'Create Task'}
               </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+            </Space>
+          </div>
+        </form>
+      </div>
+    </Modal>
   )
 }

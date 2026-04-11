@@ -6,9 +6,10 @@ import dayjs from 'dayjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type CalendarEventType = 'project' | 'task' | 'invoice'
+export type CalendarEventType = 'project' | 'task' | 'invoice'
 
 export interface CalendarEvent {
   id: string
@@ -16,6 +17,8 @@ export interface CalendarEvent {
   date: string
   href: string
   type: CalendarEventType
+  time?: string
+  description?: string
 }
 
 interface CalendarViewProps {
@@ -26,6 +29,12 @@ const eventStyles: Record<CalendarEventType, string> = {
   project: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
   task: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200',
   invoice: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
+}
+
+const eventBorders: Record<CalendarEventType, string> = {
+  project: 'border-l-blue-500',
+  task: 'border-l-yellow-500',
+  invoice: 'border-l-red-500',
 }
 
 const eventLabels: Record<CalendarEventType, string> = {
@@ -58,20 +67,23 @@ export function CalendarView({ events }: CalendarViewProps) {
   const selectedEvents = eventsByDate.get(selectedDate) ?? []
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-      <Card>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px] lg:grid-rows-1 lg:h-[calc(100vh-110px)]">
+      <Card className="flex flex-col min-h-0 h-full">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between gap-2">
             <CardTitle>{currentMonth.format('MMMM YYYY')}</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setCurrentMonth((prev) => prev.subtract(1, 'month'))}>
-                Prev
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth((prev) => prev.subtract(1, 'month'))}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentMonth(dayjs().startOf('month'))}>
+              <Button variant="outline" size="sm" onClick={() => {
+                setCurrentMonth(dayjs().startOf('month'))
+                setSelectedDate(dayjs().format('YYYY-MM-DD'))
+              }}>
                 Today
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentMonth((prev) => prev.add(1, 'month'))}>
-                Next
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth((prev) => prev.add(1, 'month'))}>
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -83,7 +95,7 @@ export function CalendarView({ events }: CalendarViewProps) {
             ))}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {monthCells.map((cellDate) => {
               const key = cellDate.format('YYYY-MM-DD')
@@ -137,20 +149,37 @@ export function CalendarView({ events }: CalendarViewProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="flex flex-col min-h-0 h-full">
         <CardHeader>
           <CardTitle className="text-base">{dayjs(selectedDate).format('dddd, MMM D')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="flex-1 space-y-3 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {selectedEvents.length === 0 ? (
             <p className="text-sm text-muted-foreground">No events for this day.</p>
           ) : (
             selectedEvents.map((event) => (
-              <Link key={event.id} href={event.href} className="block rounded-md border p-3 transition-colors hover:bg-muted/50">
-                <p className="text-sm font-medium">{event.title}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <Badge className={cn('text-[10px]', eventStyles[event.type])}>{eventLabels[event.type]}</Badge>
-                  <span className="text-xs text-muted-foreground">Open</span>
+              <Link
+                key={event.id}
+                href={event.href}
+                className={cn(
+                  'block rounded-md border border-l-[3px] p-3 transition-colors hover:bg-muted/50',
+                  eventBorders[event.type]
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{event.title}</p>
+                    {event.description && (
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{event.description}</p>
+                    )}
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge className={cn('text-[10px]', eventStyles[event.type])}>{eventLabels[event.type]}</Badge>
+                      {event.time && (
+                        <span className="text-xs text-muted-foreground">{event.time}</span>
+                      )}
+                    </div>
+                  </div>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
                 </div>
               </Link>
             ))

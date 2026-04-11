@@ -1,3 +1,4 @@
+// Force Turbopack Cache Invalidation
 'use client'
 
 import { useState, useCallback } from 'react'
@@ -18,25 +19,9 @@ import {
 } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
 import { TaskCard } from '@/components/tasks/TaskCard'
-import { TaskModal } from '@/components/tasks/TaskModal'
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import {
-  updateTaskStatusAction,
-  deleteTaskAction,
-} from '@/lib/actions/tasks'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
-import { Plus, Search } from 'lucide-react'
+import { updateTaskStatusAction } from '@/lib/actions/tasks'
 import { cn } from '@/lib/utils'
-import type { Task, Project, TaskStatus } from '@/types'
+import type { Task, TaskStatus } from '@/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { GripVertical } from 'lucide-react'
 import { StatusBadge } from '@/components/shared/StatusBadge'
@@ -49,8 +34,10 @@ const columns: { id: TaskStatus; label: string }[] = [
 ]
 
 interface KanbanBoardProps {
-  initialTasks: Task[]
-  projects: Project[]
+  tasks: Task[]
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>>
+  filteredTasks: Task[]
+  onEdit: (task: Task) => void
 }
 
 function DroppableColumn({
@@ -70,44 +57,27 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col rounded-lg bg-muted/50 p-3 min-h-[400px]',
+        'flex flex-col rounded-lg bg-muted/50 p-3 min-h-[400px] lg:min-h-0',
         isOver && 'ring-2 ring-primary/30'
       )}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <h3 className="text-sm font-semibold">{label}</h3>
         <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
           {count}
         </span>
       </div>
-      <div className="flex-1 space-y-2">{children}</div>
+      <div className="flex-1 space-y-2 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">{children}</div>
     </div>
   )
 }
 
-export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
-  const [tasks, setTasks] = useState(initialTasks)
+export function KanbanBoard({ tasks, setTasks, filteredTasks, onEdit }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
-  const [search, setSearch] = useState('')
-  const [projectFilter, setProjectFilter] = useState('all')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
-  const { toast } = useToast()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
-
-  const filteredTasks = tasks.filter((t) => {
-    const matchesSearch = t.title
-      .toLowerCase()
-      .includes(search.toLowerCase())
-    const matchesProject =
-      projectFilter === 'all' || t.project_id === projectFilter
-    return matchesSearch && matchesProject
-  })
 
   const getColumnTasks = useCallback(
     (status: TaskStatus) =>
@@ -132,7 +102,6 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     const activeTaskItem = tasks.find((t) => t.id === activeId)
     if (!activeTaskItem) return
 
-    // Determine target column
     const isOverColumn = columns.some((c) => c.id === overId)
     const targetStatus: TaskStatus = isOverColumn
       ? (overId as TaskStatus)
@@ -164,132 +133,57 @@ export function KanbanBoard({ initialTasks, projects }: KanbanBoardProps) {
     await updateTaskStatusAction(activeId, task.status, newPosition)
   }
 
-  function openEdit(task: Task) {
-    setEditingTask(task)
-    setModalOpen(true)
-  }
-
-  function openCreate() {
-    setEditingTask(null)
-    setModalOpen(true)
-  }
-
-  async function handleDelete() {
-    if (!deleteId) return
-    setDeleting(true)
-    const result = await deleteTaskAction(deleteId)
-    setDeleting(false)
-    setDeleteId(null)
-    if (result.error) {
-      toast({ title: 'Error', description: result.error, variant: 'destructive' })
-    } else {
-      setTasks((prev) => prev.filter((t) => t.id !== deleteId))
-      toast({ title: 'Task deleted' })
-    }
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 flex-1">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={projectFilter} onValueChange={setProjectFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
+    <DndContext
+      id="kanban-board-dnd"
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-1 lg:h-[calc(100vh-145px)]">
+        {columns.map((column) => {
+          const columnTasks = getColumnTasks(column.id)
+          return (
+            <DroppableColumn
+              key={column.id}
+              id={column.id}
+              label={column.label}
+              count={columnTasks.length}
+            >
+              <SortableContext
+                items={columnTasks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {columnTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onClick={() => onEdit(task)}
+                  />
+                ))}
+              </SortableContext>
+            </DroppableColumn>
+          )
+        })}
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {columns.map((column) => {
-            const columnTasks = getColumnTasks(column.id)
-            return (
-              <DroppableColumn
-                key={column.id}
-                id={column.id}
-                label={column.label}
-                count={columnTasks.length}
-              >
-                <SortableContext
-                  items={columnTasks.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {columnTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onClick={() => openEdit(task)}
-                    />
-                  ))}
-                </SortableContext>
-              </DroppableColumn>
-            )
-          })}
-        </div>
-
-        <DragOverlay>
-          {activeTask && (
-            <Card className="shadow-xl rotate-2 cursor-grabbing">
-              <CardContent className="p-3">
-                <div className="flex items-start gap-2">
-                  <GripVertical className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                  <div className="flex-1 space-y-1.5">
-                    <p className="text-sm font-medium">{activeTask.title}</p>
-                    <StatusBadge status={activeTask.priority} />
-                  </div>
+      <DragOverlay>
+        {activeTask && (
+          <Card className="shadow-xl rotate-2 cursor-grabbing">
+            <CardContent className="p-3">
+              <div className="flex items-start gap-2">
+                <GripVertical className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-sm font-medium">{activeTask.title}</p>
+                  <StatusBadge status={activeTask.priority} />
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </DragOverlay>
-      </DndContext>
-
-      <TaskModal
-        open={modalOpen}
-        onOpenChange={(open) => {
-          setModalOpen(open)
-          if (!open) setEditingTask(null)
-        }}
-        task={editingTask}
-        projects={projects}
-      />
-
-      <ConfirmDialog
-        open={!!deleteId}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Delete task"
-        description="This will permanently delete this task."
-        onConfirm={handleDelete}
-        loading={deleting}
-      />
-    </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </DragOverlay>
+    </DndContext>
   )
 }

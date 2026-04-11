@@ -1,41 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { timeLogSchema, type TimeLogFormValues } from '@/lib/validations/time-log'
-import { createTimeLogAction, updateTimeLogAction } from '@/lib/actions/time-logs'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import {
+  Modal,
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+  Input,
+  Select as AntdSelect,
+  InputNumber,
+  DatePicker,
+  Switch,
+  Button as AntdButton,
+  Typography,
+} from 'antd'
+import { createTimeLogAction, updateTimeLogAction } from '@/lib/actions/time-logs'
 import { useToast } from '@/hooks/use-toast'
 import dayjs from 'dayjs'
 import { SELECT_NONE, toSelectValue, fromSelectValue } from '@/lib/utils'
 import type { Project, Task, TimeLog } from '@/types'
+import { Loader2 } from 'lucide-react'
+
+const { Text } = Typography
 
 interface ManualLogModalProps {
   open: boolean
@@ -53,45 +37,55 @@ export function ManualLogModal({
   tasks,
 }: ManualLogModalProps) {
   const [loading, setLoading] = useState(false)
+  const [projectId, setProjectId] = useState<string>('')
   const { toast } = useToast()
+  const [form] = Form.useForm()
   const isEditing = !!timeLog
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const form = useForm<TimeLogFormValues>({
-    resolver: zodResolver(timeLogSchema) as any,
-    defaultValues: {
-      project_id: timeLog?.project_id ?? '',
-      task_id: timeLog?.task_id ?? '',
-      description: timeLog?.description ?? '',
-      hours: timeLog?.hours ?? 1,
-      date: timeLog?.date ?? dayjs().format('YYYY-MM-DD'),
-      billable: timeLog?.billable ?? true,
-    },
-  })
-
-  const selectedProjectId = form.watch('project_id')
   const filteredTasks = tasks.filter(
-    (t) => !selectedProjectId || t.project_id === selectedProjectId
+    (t) => !projectId || t.project_id === projectId
   )
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        project_id: timeLog?.project_id ?? '',
-        task_id: timeLog?.task_id ?? '',
-        description: timeLog?.description ?? '',
-        hours: timeLog?.hours ?? 1,
-        date: timeLog?.date ?? dayjs().format('YYYY-MM-DD'),
-        billable: timeLog?.billable ?? true,
-      })
+      if (timeLog) {
+        setProjectId(timeLog.project_id ?? '')
+        form.setFieldsValue({
+          project_id: toSelectValue(timeLog.project_id),
+          task_id: toSelectValue(timeLog.task_id),
+          description: timeLog.description ?? '',
+          hours: timeLog.hours ?? 1,
+          date: timeLog.date ? dayjs(timeLog.date) : dayjs(),
+          billable: timeLog.billable ?? true,
+        })
+      } else {
+        setProjectId('')
+        form.resetFields()
+        form.setFieldsValue({
+          date: dayjs(),
+          hours: 1,
+          billable: true,
+          project_id: SELECT_NONE,
+          task_id: SELECT_NONE,
+        })
+      }
     }
   }, [open, timeLog, form])
 
-  async function onSubmit(data: TimeLogFormValues) {
+  async function onFinish(values: any) {
     setLoading(true)
+    const formattedData = {
+      project_id: fromSelectValue(values.project_id),
+      task_id: fromSelectValue(values.task_id),
+      description: values.description,
+      hours: values.hours,
+      date: values.date.format('YYYY-MM-DD'),
+      billable: values.billable,
+    }
+
     const result = isEditing
-      ? await updateTimeLogAction(timeLog.id, data)
-      : await createTimeLogAction(data)
+      ? await updateTimeLogAction(timeLog.id, formattedData)
+      : await createTimeLogAction(formattedData)
 
     setLoading(false)
 
@@ -102,174 +96,139 @@ export function ManualLogModal({
 
     toast({
       title: isEditing ? 'Time log updated' : 'Time logged',
-      description: `${data.hours}h has been ${isEditing ? 'updated' : 'logged'}.`,
+      description: `${values.hours}h has been ${isEditing ? 'updated' : 'logged'}.`,
     })
 
     onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Time Log' : 'Log Time Manually'}</DialogTitle>
-          <DialogDescription>
+    <Modal
+      open={open}
+      onCancel={() => onOpenChange(false)}
+      title={
+        <div className="flex flex-col gap-1 pb-2">
+          <span className="text-lg font-semibold">{isEditing ? 'Edit Time Log' : 'Log Time Manually'}</span>
+          <Text className="text-xs text-muted-foreground font-normal">
             {isEditing ? 'Update the time log entry.' : 'Add a manual time entry.'}
-          </DialogDescription>
-        </DialogHeader>
+          </Text>
+        </div>
+      }
+      footer={null}
+      destroyOnHidden
+      centered
+      className="premium-modal"
+      width={500}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        initialValues={{
+          hours: 1,
+          date: dayjs(),
+          billable: true,
+        }}
+        className="pt-4"
+      >
+        <Form.Item
+          name="project_id"
+          label={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Project</span>}
+        >
+          <AntdSelect
+            className="h-10 select-rounded-full"
+            placeholder="Select project"
+            onChange={(v) => {
+              setProjectId(fromSelectValue(v))
+              form.setFieldValue('task_id', SELECT_NONE)
+            }}
+            options={[
+              { label: 'No project', value: SELECT_NONE },
+              ...projects.map((p) => ({ label: p.title, value: p.id })),
+            ]}
+          />
+        </Form.Item>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="project_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project</FormLabel>
-                  <Select
-                    value={toSelectValue(field.value)}
-                    onValueChange={(v) => {
-                      field.onChange(fromSelectValue(v))
-                      form.setValue('task_id', '')
-                    }}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={SELECT_NONE}>No project</SelectItem>
-                      {projects.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <Form.Item
+          name="task_id"
+          label={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Task</span>}
+        >
+          <AntdSelect
+            className="h-10 select-rounded-full"
+            placeholder="Select task"
+            options={[
+              { label: 'No task', value: SELECT_NONE },
+              ...filteredTasks.map((t) => ({ label: t.title, value: t.id })),
+            ]}
+          />
+        </Form.Item>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Form.Item
+            name="date"
+            label={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</span>}
+            rules={[{ required: true, message: 'Please select a date' }]}
+          >
+            <DatePicker className="w-full h-10 rounded-full" format="YYYY-MM-DD" />
+          </Form.Item>
+
+          <Form.Item
+            name="hours"
+            label={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hours</span>}
+            rules={[{ required: true, message: 'Required' }]}
+          >
+            <InputNumber
+              className="w-full h-10 rounded-full flex items-center"
+              min={0.01}
+              step={0.25}
+              placeholder="1.5"
             />
+          </Form.Item>
+        </div>
 
-            <FormField
-              control={form.control}
-              name="task_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Task</FormLabel>
-                  <Select
-                    value={toSelectValue(field.value)}
-                    onValueChange={(v) => field.onChange(fromSelectValue(v))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select task" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={SELECT_NONE}>No task</SelectItem>
-                      {filteredTasks.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <Form.Item
+          name="description"
+          label={<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</span>}
+        >
+          <Input.TextArea
+            placeholder="What did you work on?"
+            autoSize={{ minRows: 3, maxRows: 5 }}
+            className="rounded-xl px-4 py-3"
+          />
+        </Form.Item>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="hours"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hours</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.25"
-                        min="0.01"
-                        placeholder="1.5"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <Form.Item
+          name="billable"
+          valuePropName="checked"
+          className="mb-6"
+        >
+          <div className="flex items-center justify-between rounded-2xl border border-muted/30 p-4 bg-muted/5">
+            <div className="space-y-0.5">
+              <Text className="text-sm font-semibold block">Billable</Text>
+              <Text className="text-xs text-muted-foreground block">Include this time in invoices</Text>
             </div>
+            <Switch />
+          </div>
+        </Form.Item>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="What did you work on?"
-                      rows={3}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="billable"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <FormLabel className="text-sm font-medium">Billable</FormLabel>
-                    <p className="text-xs text-muted-foreground">
-                      Include this time in invoices
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditing ? 'Update' : 'Log Time'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+        <div className="flex justify-end gap-3 pt-2">
+          <AntdButton
+            className="h-10 rounded-full px-6 border-muted/50 font-medium"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancel
+          </AntdButton>
+          <AntdButton
+            type="primary"
+            htmlType="submit"
+            className="h-10 rounded-full px-8 bg-primary hover:bg-primary/90! border-none font-medium flex items-center gap-2"
+            loading={loading}
+          >
+            {isEditing ? 'Update Entry' : 'Log Time'}
+          </AntdButton>
+        </div>
+      </Form>
+    </Modal>
   )
 }

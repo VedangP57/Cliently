@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { PageHeader } from '@/components/shared/PageHeader'
+
 import { ProposalTable } from '@/components/proposals/ProposalTable'
 import type { Proposal } from '@/types'
 
@@ -18,10 +18,5 @@ export default async function ProposalsPage() {
     client: p.client as { name: string } | null ? { name: (p.client as { name: string })?.name } : undefined,
   })) as Proposal[]
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Proposals" description={`${proposals.length} proposals`} />
-      <ProposalTable proposals={proposals} />
-    </div>
-  )
+  return <ProposalTable proposals={proposals} />
 }

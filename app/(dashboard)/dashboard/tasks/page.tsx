@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { PageHeader } from '@/components/shared/PageHeader'
-import { KanbanBoard } from '@/components/tasks/KanbanBoard'
+import { TasksWrapper } from '@/components/tasks/TasksWrapper'
 import type { Task, Project } from '@/types'
 
 export default async function TasksPage() {
@@ -30,16 +29,5 @@ export default async function TasksPage() {
       : undefined,
   })) as Task[]
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Tasks"
-        description="Drag tasks between columns to update their status."
-      />
-      <KanbanBoard
-        initialTasks={tasks}
-        projects={(projectsRes.data ?? []) as Project[]}
-      />
-    </div>
-  )
+  return <TasksWrapper initialTasks={tasks} projects={(projectsRes.data ?? []) as Project[]} />
 }

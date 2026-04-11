@@ -44,7 +44,7 @@ const STATUS_OPTIONS: NonNullable<SelectProps<StatusFilter>['options']> = [
   { label: 'Inactive', value: 'inactive' },
   { label: 'Lead', value: 'lead' },
   { label: 'Archived', value: 'archived' },
-] 
+]
 
 export function ClientTable({ clients }: ClientTableProps) {
   const [search, setSearch] = useState('')
@@ -170,7 +170,7 @@ export function ClientTable({ clients }: ClientTableProps) {
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-blue-500! hover:text-blue-600! hover:bg-transparent"
               icon={<ExternalLink className="h-3.5 w-3.5" />}
               onClick={() => router.push(`/dashboard/clients/${record.id}`)}
             />
@@ -179,7 +179,7 @@ export function ClientTable({ clients }: ClientTableProps) {
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-amber-500! hover:text-amber-600! hover:bg-transparent"
               icon={<SquarePen className="h-3.5 w-3.5" />}
               onClick={() => openEdit(record)}
             />
@@ -188,7 +188,7 @@ export function ClientTable({ clients }: ClientTableProps) {
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-red-500! hover:text-red-600! hover:bg-transparent"
               icon={<Trash className="h-3.5 w-3.5" />}
               onClick={() => setDeleteId(record.id)}
             />
@@ -217,6 +217,7 @@ export function ClientTable({ clients }: ClientTableProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-8 rounded-full text-sm"
+              allowClear
             />
           </div>
 

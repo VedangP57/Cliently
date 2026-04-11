@@ -3,22 +3,12 @@
 import { useState, useMemo } from 'react'
 import {
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Pencil, Trash2, Clock } from 'lucide-react'
+  Select as AntdSelect,
+  Button as AntdButton,
+  Tooltip,
+  Typography,
+} from 'antd'
+import { Pencil, Trash2, Clock, SquarePen, Trash } from 'lucide-react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ManualLogModal } from '@/components/time/ManualLogModal'
@@ -26,6 +16,9 @@ import { deleteTimeLogAction } from '@/lib/actions/time-logs'
 import { useToast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
 import type { TimeLog, Project, Task } from '@/types'
+import type { ColumnsType } from 'antd/es/table'
+
+const { Text } = Typography
 
 interface TimeLogTableProps {
   timeLogs: TimeLog[]
@@ -71,112 +64,154 @@ export function TimeLogTable({ timeLogs, projects, tasks }: TimeLogTableProps) {
     setEditOpen(true)
   }
 
+  const columns: ColumnsType<TimeLog> = [
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      width: 120,
+      render: (date) => <span className="text-muted-foreground whitespace-nowrap">{formatDate(date)}</span>,
+    },
+    {
+      title: 'Project',
+      key: 'project',
+      width: 200,
+      render: (_, record) => (
+        <span className="font-medium truncate block max-w-[180px]" title={record.project?.title}>
+          {record.project?.title ?? <span className="text-muted-foreground">—</span>}
+        </span>
+      ),
+    },
+    {
+      title: 'Task',
+      key: 'task',
+      width: 200,
+      responsive: ['md'],
+      render: (_, record) => (
+        <span className="text-muted-foreground truncate block max-w-[180px]" title={record.task?.title}>
+          {record.task?.title ?? '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (description) => (
+        <span className="text-muted-foreground truncate block max-w-[300px]" title={description}>
+          {description || '—'}
+        </span>
+      ),
+    },
+    {
+      title: <div className="text-right w-full">Hours</div>,
+      dataIndex: 'hours',
+      key: 'hours',
+      width: 100,
+      align: 'right',
+      render: (hours) => <span className="font-mono font-bold text-primary">{hours.toFixed(2)}</span>,
+    },
+    {
+      title: <div className="text-center w-full">Billable</div>,
+      dataIndex: 'billable',
+      key: 'billable',
+      width: 100,
+      align: 'center',
+      render: (billable) => (
+        <div className="flex justify-center">
+          {billable ? (
+            <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              Yes
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold bg-muted text-muted-foreground">
+              No
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: <div className="text-center w-full">Action</div>,
+      key: 'actions',
+      width: 100,
+      align: 'center',
+      fixed: 'right',
+      render: (_, record) => (
+        <div className="flex items-center justify-center gap-1">
+          <Tooltip title="Edit">
+            <AntdButton
+              type="text"
+              size="small"
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-amber-500! hover:text-amber-600! hover:bg-transparent"
+              icon={<SquarePen className="h-3.5 w-3.5" />}
+              onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <AntdButton
+              type="text"
+              size="small"
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-red-500! hover:text-red-600! hover:bg-transparent"
+              icon={<Trash className="h-3.5 w-3.5" />}
+              onClick={() => setDeleteId(record.id)}
+            />
+          </Tooltip>
+        </div>
+      ),
+    },
+  ]
+
   return (
-    <div className="space-y-4">
-      {/* Filter */}
-      <div className="flex items-center gap-3">
-        <Select value={filterProjectId} onValueChange={setFilterProjectId}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="All projects" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All projects</SelectItem>
-            {projects.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="space-y-6">
+      {/* Filter and Total Summary */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3 pt-6">
+          <Text className="text-xs text-muted-foreground uppercase tracking-wider font-semibold px-1">Filter by Project</Text>
+          <AntdSelect
+            className="w-[200px] h-8 select-rounded-full"
+            value={filterProjectId}
+            onChange={setFilterProjectId}
+            options={[
+              { label: 'All Projects', value: 'all' },
+              ...projects.map((p) => ({ label: p.title, value: p.id })),
+            ]}
+          />
+        </div>
+
+        {filtered.length > 0 && (
+          <div className="h-8 flex items-center px-4 rounded-full bg-primary/5 border border-primary/10 text-primary text-sm font-medium">
+            Total:{' '}
+            <span className="font-mono font-bold ml-1.5">{totalHours.toFixed(2)}</span>
+            <span className="ml-1 text-xs opacity-80 uppercase tracking-tight">hrs</span>
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState
           icon={Clock}
           title="No time logs"
-          description="Start the timer or log time manually to track your work."
+          description={filterProjectId === 'all' ? 'Start the timer or log time manually to track your work.' : 'No time logs found for the selected project.'}
         />
       ) : (
-        <>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Project</TableHead>
-                  <TableHead className="hidden md:table-cell">Task</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                  <TableHead className="text-center">Billable</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {formatDate(log.date)}
-                    </TableCell>
-                    <TableCell>
-                      {log.project?.title ?? (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {log.task?.title ?? (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {log.description || (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {log.hours.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {log.billable ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Yes
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                          No
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(log)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteId(log.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Total */}
-          <div className="flex justify-end">
-            <div className="rounded-md border px-4 py-2 text-sm font-medium">
-              Total: <span className="font-mono font-bold">{totalHours.toFixed(2)}</span> hours
-            </div>
-          </div>
-        </>
+        <div className="user-table">
+          <Table<TimeLog>
+            columns={columns}
+            dataSource={filtered}
+            rowKey="id"
+            bordered
+            size="middle"
+            pagination={{
+              defaultPageSize: 20,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '30', '50'],
+              placement: ['bottomRight'] as any,
+              className: 'ant-pagination-mini !mt-4',
+            }}
+            scroll={{ x: 1000, y: 'calc(100vh - 430px)' }}
+          />
+        </div>
       )}
 
       {/* Edit modal */}

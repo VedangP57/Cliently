@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { 
-  Table, 
-  Button as AntdButton, 
-  Input, 
-  Select as AntdSelect, 
-  Tooltip, 
-  Typography, 
-  Space 
+import {
+  Table,
+  Button as AntdButton,
+  Input,
+  Select as AntdSelect,
+  Tooltip,
+  Typography,
+  Space
 } from 'antd'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ProjectModal } from '@/components/projects/ProjectModal'
@@ -21,9 +21,9 @@ import { useToast } from '@/hooks/use-toast'
 import {
   Plus,
   Search,
-  Pencil,
-  Trash2,
-  Eye,
+  SquarePen,
+  Trash,
+  ExternalLink,
 } from 'lucide-react'
 import type { Project, Client } from '@/types'
 import type { ColumnsType } from 'antd/es/table'
@@ -52,9 +52,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       .toLowerCase()
       .includes(search.toLowerCase())
     const matchesStatus =
-        statusFilter === 'all' || p.status === statusFilter
+      statusFilter === 'all' || p.status === statusFilter
     const matchesClient =
-        clientFilter === 'all' || p.client_id === clientFilter
+      clientFilter === 'all' || p.client_id === clientFilter
     return matchesSearch && matchesStatus && matchesClient
   })
 
@@ -133,31 +133,31 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       width: 140,
       align: 'center',
       render: (_, record) => (
-        <div className="flex items-center justify-center gap-1.5">
-          <Tooltip title="View Project">
+        <div className="flex items-center justify-center gap-1">
+          <Tooltip title="View">
             <AntdButton
-              type="primary"
+              type="text"
               size="small"
-              className="flex items-center justify-center rounded-md bg-blue-500 hover:bg-blue-600! border-none shadow-none"
-              icon={<Eye className="h-3.5 w-3.5" />}
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-blue-500! hover:text-blue-600! hover:bg-transparent"
+              icon={<ExternalLink className="h-3.5 w-3.5" />}
               onClick={() => router.push(`/dashboard/projects/${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Edit Project">
+          <Tooltip title="Edit">
             <AntdButton
-              type="primary"
+              type="text"
               size="small"
-              className="flex items-center justify-center rounded-md bg-amber-500 hover:bg-amber-600! border-none shadow-none"
-              icon={<Pencil className="h-3.5 w-3.5" />}
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-amber-500! hover:text-amber-600! hover:bg-transparent"
+              icon={<SquarePen className="h-3.5 w-3.5" />}
               onClick={() => openEdit(record)}
             />
           </Tooltip>
-          <Tooltip title="Delete Project">
+          <Tooltip title="Delete">
             <AntdButton
-              type="primary"
+              type="text"
               size="small"
-              className="flex items-center justify-center rounded-md bg-red-500 hover:bg-red-600! border-none shadow-none"
-              icon={<Trash2 className="h-3.5 w-3.5" />}
+              className="flex items-center justify-center h-8 w-8 rounded-lg text-red-500! hover:text-red-600! hover:bg-transparent"
+              icon={<Trash className="h-3.5 w-3.5" />}
               onClick={() => setDeleteId(record.id)}
             />
           </Tooltip>
@@ -180,9 +180,10 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-8 rounded-full text-sm"
+              allowClear
             />
           </div>
-          
+
           <AntdSelect
             className="w-[120px] h-8 select-rounded-full"
             value={statusFilter}
@@ -208,9 +209,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             ]}
           />
 
-          <AntdButton 
-            type="primary" 
-            onClick={openCreate} 
+          <AntdButton
+            type="primary"
+            onClick={openCreate}
             className="h-8 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-4 text-sm text-primary-foreground"
           >
             <Plus className="h-3.5 w-3.5" />

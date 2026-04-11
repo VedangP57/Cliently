@@ -55,7 +55,7 @@ export default async function CalendarPage() {
   }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader title="Calendar" description="Track deadlines across projects, tasks, and invoices." />
       <CalendarView events={[...projectEvents, ...taskEvents, ...invoiceEvents]} />
     </div>

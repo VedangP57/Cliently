@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { PageHeader } from '@/components/shared/PageHeader'
+
 import { InvoiceTable } from '@/components/invoices/InvoiceTable'
 import type { Invoice } from '@/types'
 
@@ -18,10 +18,5 @@ export default async function InvoicesPage() {
     client: inv.client as { name: string } | null ? { name: (inv.client as { name: string })?.name } : undefined,
   })) as Invoice[]
 
-  return (
-    <div className="space-y-6">
-      <PageHeader title="Invoices" description={`${invoices.length} invoices`} />
-      <InvoiceTable invoices={invoices} />
-    </div>
-  )
+  return <InvoiceTable invoices={invoices} />
 }

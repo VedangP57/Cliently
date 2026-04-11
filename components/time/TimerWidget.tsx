@@ -1,23 +1,21 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Card,
+  Button as AntdButton,
+  Input,
+  Select as AntdSelect,
+  Typography,
+} from 'antd'
 import { Play, Pause, Square, Timer } from 'lucide-react'
 import { createTimeLogAction } from '@/lib/actions/time-logs'
 import { useToast } from '@/hooks/use-toast'
 import dayjs from 'dayjs'
 import { SELECT_NONE, toSelectValue, fromSelectValue } from '@/lib/utils'
 import type { Project, Task } from '@/types'
+
+const { Title, Text } = Typography
 
 type TimerState = 'idle' | 'running' | 'paused'
 
@@ -118,113 +116,119 @@ export function TimerWidget({ projects, tasks }: TimerWidgetProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Timer className="h-5 w-5" />
-          Timer
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-          {/* Timer display */}
-          <div className="flex-shrink-0 text-center lg:text-left">
-            <p className="text-4xl font-mono font-bold tabular-nums tracking-wider">
-              {formatTime(elapsed)}
-            </p>
+    <Card
+      className="shadow-sm border-muted/20"
+      classNames={{ header: 'pb-3', body: 'p-6' }}
+    >
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+        {/* Timer display */}
+        <div className="shrink-0 text-center lg:text-left">
+          <p className="text-5xl font-mono font-bold tabular-nums tracking-wider text-primary">
+            {formatTime(elapsed)}
+          </p>
+        </div>
+
+        {/* Form elements */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:flex-1">
+          <div className="space-y-1">
+            <Text className="text-xs text-muted-foreground uppercase tracking-wider font-semibold px-1">Project</Text>
+            <AntdSelect
+              className="w-full h-9 select-rounded-full"
+              placeholder="Select project"
+              value={toSelectValue(projectId)}
+              onChange={(v) => {
+                setProjectId(fromSelectValue(v))
+                setTaskId('')
+              }}
+              options={[
+                { label: 'No project', value: SELECT_NONE },
+                ...projects.map((p) => ({ label: p.title, value: p.id })),
+              ]}
+            />
           </div>
 
-          {/* Controls row */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:flex-1">
-            <div>
-              <Label className="text-xs text-muted-foreground">Project</Label>
-              <Select
-                value={toSelectValue(projectId)}
-                onValueChange={(v) => {
-                  setProjectId(fromSelectValue(v))
-                  setTaskId('')
-                }}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SELECT_NONE}>No project</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Task</Label>
-              <Select
-                value={toSelectValue(taskId)}
-                onValueChange={(v) => setTaskId(fromSelectValue(v))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select task" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SELECT_NONE}>No task</SelectItem>
-                  {filteredTasks.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Description</Label>
-              <Input
-                className="mt-1"
-                placeholder="What are you working on?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
+          <div className="space-y-1">
+            <Text className="text-xs text-muted-foreground uppercase tracking-wider font-semibold px-1">Task</Text>
+            <AntdSelect
+              className="w-full h-9 select-rounded-full"
+              placeholder="Select task"
+              value={toSelectValue(taskId)}
+              onChange={(v) => setTaskId(fromSelectValue(v))}
+              options={[
+                { label: 'No task', value: SELECT_NONE },
+                ...filteredTasks.map((t) => ({ label: t.title, value: t.id })),
+              ]}
+            />
           </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-2 flex-shrink-0">
-            {timerState === 'idle' && (
-              <Button onClick={handleStart} className="gap-2">
-                <Play className="h-4 w-4" />
-                Start
-              </Button>
-            )}
-            {timerState === 'running' && (
-              <>
-                <Button onClick={handlePause} variant="outline" className="gap-2">
-                  <Pause className="h-4 w-4" />
-                  Pause
-                </Button>
-                <Button onClick={handleStop} variant="destructive" className="gap-2" disabled={saving}>
-                  <Square className="h-4 w-4" />
-                  Stop
-                </Button>
-              </>
-            )}
-            {timerState === 'paused' && (
-              <>
-                <Button onClick={handleResume} className="gap-2">
-                  <Play className="h-4 w-4" />
-                  Resume
-                </Button>
-                <Button onClick={handleStop} variant="destructive" className="gap-2" disabled={saving}>
-                  <Square className="h-4 w-4" />
-                  Stop
-                </Button>
-              </>
-            )}
+          <div className="space-y-1">
+            <Text className="text-xs text-muted-foreground uppercase tracking-wider font-semibold px-1">Description</Text>
+            <Input
+              className="h-9 rounded-full px-4 text-sm"
+              placeholder="What are you working on?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </div>
         </div>
-      </CardContent>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 shrink-0 pt-2 lg:pt-0">
+          {timerState === 'idle' && (
+            <AntdButton
+              type="primary"
+              onClick={handleStart}
+              className="h-10 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-6 font-medium"
+            >
+              <Play className="h-4.5 w-4.5 fill-current" />
+              Start
+            </AntdButton>
+          )}
+          {timerState === 'running' && (
+            <>
+              <AntdButton
+                onClick={handlePause}
+                className="h-10 rounded-full flex items-center gap-2 px-5 font-medium border-muted/30"
+              >
+                <Pause className="h-4.5 w-4.5" />
+                Pause
+              </AntdButton>
+              <AntdButton
+                onClick={handleStop}
+                danger
+                type="primary"
+                className="h-10 rounded-full flex items-center gap-2 px-5 font-medium"
+                disabled={saving}
+              >
+                <Square className="h-4 w-4 fill-current" />
+                Stop
+              </AntdButton>
+            </>
+          )}
+          {timerState === 'paused' && (
+            <>
+              <AntdButton
+                type="primary"
+                onClick={handleResume}
+                className="h-10 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-6 font-medium"
+              >
+                <Play className="h-4.5 w-4.5 fill-current" />
+                Resume
+              </AntdButton>
+              <AntdButton
+                onClick={handleStop}
+                danger
+                type="primary"
+                className="h-10 rounded-full flex items-center gap-2 px-5 font-medium"
+                disabled={saving}
+              >
+                <Square className="h-4 w-4 fill-current" />
+                Stop
+              </AntdButton>
+            </>
+          )}
+        </div>
+      </div>
     </Card>
   )
 }
