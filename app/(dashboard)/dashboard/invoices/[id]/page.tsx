@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect } from 'next/navigation'
 import InvoiceBuilder from '@/components/invoices/InvoiceBuilder'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -17,13 +18,11 @@ export default async function InvoiceBuilderPage({ params }: { params: Promise<{
 
   if (id === 'new') {
     await ensureProfile(user)
-    const { count } = await supabase
-      .from('invoices')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-    const invoiceNumber = `INV-${String((count ?? 0) + 1).padStart(4, '0')}`
+    const now = new Date()
+    const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+    const invoiceNumber = `INV-${ts}`
 
-    const { data: created } = await supabase
+    const { data: created, error: createError } = await supabase
       .from('invoices')
       .insert({
         user_id: user.id,
@@ -38,6 +37,10 @@ export default async function InvoiceBuilderPage({ params }: { params: Promise<{
       })
       .select('id')
       .single()
+
+    if (createError) {
+      console.error('Invoice create error:', createError.message)
+    }
 
     if (created?.id) redirect(`/dashboard/invoices/${created.id}`)
     notFound()
