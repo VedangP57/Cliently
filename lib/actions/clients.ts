@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { clientSchema, type ClientFormValues } from '@/lib/validations/client'
 import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { updateOnboardingStep } from '@/lib/actions/onboarding'
 
 export async function createClientAction(data: ClientFormValues) {
   const parsed = clientSchema.safeParse(data)
@@ -37,6 +38,8 @@ export async function createClientAction(data: ClientFormValues) {
     .single()
 
   if (error) return { data: null, error: error.message }
+
+  updateOnboardingStep('has_added_client', true).catch(() => {})
 
   revalidatePath('/dashboard/clients')
   return { data: client, error: null }

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { loginSchema, signupSchema } from '@/lib/validations/auth'
 import { redirect } from 'next/navigation'
 
@@ -11,7 +12,7 @@ export async function loginAction(formData: { email: string; password: string })
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   })
@@ -20,7 +21,15 @@ export async function loginAction(formData: { email: string; password: string })
     return { data: null, error: error.message }
   }
 
-  redirect('/dashboard')
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single()
+
+  const destination = profile?.role === 'admin' ? '/admin' : '/dashboard'
+  redirect(destination)
 }
 
 export async function signupAction(formData: {

@@ -70,49 +70,66 @@ export function TimeLogTable({ timeLogs, projects, tasks }: TimeLogTableProps) {
       dataIndex: 'date',
       key: 'date',
       width: 120,
+      align: 'center',
       render: (date) => <span className="text-muted-foreground whitespace-nowrap">{formatDate(date)}</span>,
     },
     {
       title: 'Project',
       key: 'project',
-      width: 200,
-      render: (_, record) => (
-        <span className="font-medium truncate block max-w-[180px]" title={record.project?.title}>
-          {record.project?.title ?? <span className="text-muted-foreground">—</span>}
-        </span>
+      width: 180,
+      align: 'center',
+      render: (_, record) => record.project?.title ? (
+        <Tooltip title={record.project.title}>
+          <span className="font-medium truncate block max-w-[160px] mx-auto">
+            {record.project.title}
+          </span>
+        </Tooltip>
+      ) : (
+        <span className="text-muted-foreground">—</span>
       ),
     },
     {
       title: 'Task',
       key: 'task',
-      width: 200,
+      width: 180,
+      align: 'center',
       responsive: ['md'],
-      render: (_, record) => (
-        <span className="text-muted-foreground truncate block max-w-[180px]" title={record.task?.title}>
-          {record.task?.title ?? '—'}
-        </span>
+      render: (_, record) => record.task?.title ? (
+        <Tooltip title={record.task.title}>
+          <span className="text-muted-foreground truncate block max-w-[160px] mx-auto">
+            {record.task.title}
+          </span>
+        </Tooltip>
+      ) : (
+        <span className="text-muted-foreground">—</span>
       ),
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      render: (description) => (
-        <span className="text-muted-foreground truncate block max-w-[300px]" title={description}>
-          {description || '—'}
-        </span>
+      width: 180,
+      align: 'center',
+      render: (description) => description ? (
+        <Tooltip title={description}>
+          <span className="text-muted-foreground truncate block max-w-[160px] mx-auto">
+            {description}
+          </span>
+        </Tooltip>
+      ) : (
+        <span className="text-muted-foreground">—</span>
       ),
     },
     {
-      title: <div className="text-right w-full">Hours</div>,
+      title: 'Hours',
       dataIndex: 'hours',
       key: 'hours',
       width: 100,
-      align: 'right',
+      align: 'center',
       render: (hours) => <span className="font-mono font-bold text-primary">{hours.toFixed(2)}</span>,
     },
     {
-      title: <div className="text-center w-full">Billable</div>,
+      title: 'Billable',
       dataIndex: 'billable',
       key: 'billable',
       width: 100,
@@ -132,7 +149,7 @@ export function TimeLogTable({ timeLogs, projects, tasks }: TimeLogTableProps) {
       ),
     },
     {
-      title: <div className="text-center w-full">Action</div>,
+      title: 'Action',
       key: 'actions',
       width: 100,
       align: 'center',

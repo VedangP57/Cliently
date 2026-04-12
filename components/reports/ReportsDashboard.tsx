@@ -2,23 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
-import {
-  Bar,
-  BarChart,
-  Cell,
-  CartesianGrid,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import ReactECharts from 'echarts-for-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
+import { useTheme } from 'next-themes'
 
 type RangeKey = '30d' | '3m' | '6m' | '1y'
 
@@ -55,14 +43,13 @@ const ranges: Array<{ key: RangeKey; label: string; months: number }> = [
 
 const pieColors = ['#3b82f6', '#f59e0b', '#ef4444', '#22c55e', '#8b5cf6', '#64748b']
 
-function formatTooltipValue(value: unknown, suffix = '') {
-  const numeric = typeof value === 'number' ? value : Number(value ?? 0)
-  if (Number.isNaN(numeric)) return `${value ?? ''}`
-  return suffix ? `${numeric.toFixed(2)}${suffix}` : formatCurrency(numeric)
-}
-
 export function ReportsDashboard({ invoices, timeLogs, expenses }: ReportsDashboardProps) {
   const [range, setRange] = useState<RangeKey>('30d')
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+  const textColor = isDark ? '#a1a1aa' : '#71717a'
+  const gridLineColor = isDark ? '#27272a' : '#e4e4e7'
+
   const months = ranges.find((item) => item.key === range)?.months ?? 1
   const periodStart = dayjs().subtract(months, 'month').startOf('day')
   const monthKeys = Array.from({ length: months }, (_, i) =>
@@ -166,6 +153,135 @@ export function ReportsDashboard({ invoices, timeLogs, expenses }: ReportsDashbo
     }
   }, [filteredRevenue, filteredLogs, filteredExpenses])
 
+  const revenueOption = {
+    tooltip: {
+      trigger: 'axis' as const,
+      formatter: (params: any) => {
+        const p = Array.isArray(params) ? params[0] : params
+        return `${p.name}<br/>${p.marker} Revenue: ${formatCurrency(p.value)}`
+      },
+    },
+    grid: { left: 60, right: 20, top: 20, bottom: 30 },
+    xAxis: {
+      type: 'category' as const,
+      data: revenueByMonth.map((d) => d.month),
+      axisLabel: { color: textColor, fontSize: 11 },
+      axisLine: { lineStyle: { color: gridLineColor } },
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: { color: textColor, fontSize: 11 },
+      splitLine: { lineStyle: { color: gridLineColor, type: 'dashed' as const } },
+    },
+    series: [{
+      data: revenueByMonth.map((d) => d.revenue),
+      type: 'line' as const,
+      smooth: true,
+      lineStyle: { color: '#2563eb', width: 2 },
+      itemStyle: { color: '#2563eb' },
+      areaStyle: { color: { type: 'linear' as const, x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: isDark ? 'rgba(37,99,235,0.3)' : 'rgba(37,99,235,0.15)' }, { offset: 1, color: 'rgba(37,99,235,0)' }] } },
+    }],
+  }
+
+  const hoursOption = {
+    tooltip: {
+      trigger: 'axis' as const,
+      formatter: (params: any) => {
+        const p = Array.isArray(params) ? params[0] : params
+        return `${p.name}<br/>${p.marker} Hours: ${p.value}h`
+      },
+    },
+    grid: { left: 50, right: 20, top: 20, bottom: 50 },
+    xAxis: {
+      type: 'category' as const,
+      data: hoursByProject.map((d) => d.project),
+      axisLabel: { color: textColor, fontSize: 11, rotate: 30 },
+      axisLine: { lineStyle: { color: gridLineColor } },
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: { color: textColor, fontSize: 11 },
+      splitLine: { lineStyle: { color: gridLineColor, type: 'dashed' as const } },
+    },
+    series: [{
+      data: hoursByProject.map((d) => d.hours),
+      type: 'bar' as const,
+      itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
+    }],
+  }
+
+  const totalExpenseAmount = filteredExpenses.reduce((s, e) => s + e.amount, 0)
+  const expensesOption = {
+    tooltip: { trigger: 'item' as const, formatter: (params: any) => `${params.name}<br/>${params.marker} ${formatCurrency(params.value)} (${params.percent}%)` },
+    legend: {
+      orient: 'horizontal' as const,
+      bottom: 0,
+      left: 'center' as const,
+      textStyle: { color: textColor, fontSize: 11 },
+      itemWidth: 10,
+      itemHeight: 10,
+      itemGap: 16,
+      icon: 'circle',
+    },
+    graphic: [{
+      type: 'group' as const,
+      left: 'center',
+      top: 'middle',
+      children: [
+        { type: 'text' as const, style: { text: formatCurrency(totalExpenseAmount), fontSize: 18, fontWeight: 'bold' as const, fill: isDark ? '#f4f4f5' : '#18181b', textAlign: 'center' as const, x: 0, y: -8 } },
+        { type: 'text' as const, style: { text: 'Total', fontSize: 12, fill: textColor, textAlign: 'center' as const, x: 0, y: 14 } },
+      ],
+    }],
+    series: [{
+      type: 'pie' as const,
+      radius: ['55%', '78%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      label: { show: false },
+      emphasis: {
+        scale: true,
+        scaleSize: 6,
+        label: { show: false },
+        itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.15)' },
+      },
+      itemStyle: { borderRadius: 6, borderColor: isDark ? '#09090b' : '#ffffff', borderWidth: 3 },
+      data: expensesByCategory.map((d, i) => ({
+        name: d.category,
+        value: d.amount,
+        itemStyle: { color: pieColors[i % pieColors.length] },
+      })),
+    }],
+  }
+
+  const profitLossOption = {
+    tooltip: {
+      trigger: 'axis' as const,
+      formatter: (params: any) => {
+        const p = Array.isArray(params) ? params[0] : params
+        return `${p.name}<br/>${p.marker} P&L: ${formatCurrency(p.value)}`
+      },
+    },
+    grid: { left: 60, right: 20, top: 20, bottom: 30 },
+    xAxis: {
+      type: 'category' as const,
+      data: profitLossByMonth.map((d) => d.month),
+      axisLabel: { color: textColor, fontSize: 11 },
+      axisLine: { lineStyle: { color: gridLineColor } },
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: { color: textColor, fontSize: 11 },
+      splitLine: { lineStyle: { color: gridLineColor, type: 'dashed' as const } },
+    },
+    series: [{
+      data: profitLossByMonth.map((d) => ({
+        value: d.value,
+        itemStyle: { color: d.value >= 0 ? '#22c55e' : '#ef4444', borderRadius: d.value >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4] },
+      })),
+      type: 'bar' as const,
+    }],
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
@@ -181,82 +297,51 @@ export function ReportsDashboard({ invoices, timeLogs, expenses }: ReportsDashbo
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Revenue</CardTitle>
-          <p className="text-sm text-muted-foreground">Total revenue: {formatCurrency(totals.revenue)}</p>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={revenueByMonth}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatTooltipValue(value)} />
-              <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Row 1: Revenue + Hours */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue</CardTitle>
+            <p className="text-sm text-muted-foreground">Total revenue: {formatCurrency(totals.revenue)}</p>
+          </CardHeader>
+          <CardContent>
+            <ReactECharts option={revenueOption} style={{ height: 280 }} />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Hours</CardTitle>
-          <p className="text-sm text-muted-foreground">Total hours: {totals.hours.toFixed(2)}h</p>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={hoursByProject}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="project" tick={{ fontSize: 11 }} />
-              <YAxis />
-              <Tooltip formatter={(value) => formatTooltipValue(value, 'h')} />
-              <Bar dataKey="hours" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Hours</CardTitle>
+            <p className="text-sm text-muted-foreground">Total hours: {totals.hours.toFixed(2)}h</p>
+          </CardHeader>
+          <CardContent>
+            <ReactECharts option={hoursOption} style={{ height: 280 }} />
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Expenses</CardTitle>
-          <p className="text-sm text-muted-foreground">Total expenses: {formatCurrency(totals.expenses)}</p>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={expensesByCategory} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={100} label>
-                {expensesByCategory.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatTooltipValue(value)} />
-            </PieChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Row 2: Expenses + Profit & Loss */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Expenses</CardTitle>
+            <p className="text-sm text-muted-foreground">Total expenses: {formatCurrency(totals.expenses)}</p>
+          </CardHeader>
+          <CardContent>
+            <ReactECharts option={expensesOption} style={{ height: 280 }} />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profit &amp; Loss</CardTitle>
-          <p className="text-sm text-muted-foreground">Net profit: {formatCurrency(totals.netProfit)}</p>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={profitLossByMonth}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatTooltipValue(value)} />
-              <Bar dataKey="value">
-                {profitLossByMonth.map((entry, index) => (
-                  <Cell key={`pl-cell-${index}`} fill={entry.value >= 0 ? '#22c55e' : '#ef4444'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Profit &amp; Loss</CardTitle>
+            <p className="text-sm text-muted-foreground">Net profit: {formatCurrency(totals.netProfit)}</p>
+          </CardHeader>
+          <CardContent>
+            <ReactECharts option={profitLossOption} style={{ height: 280 }} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

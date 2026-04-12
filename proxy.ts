@@ -1,5 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+
+function createMiddlewareAdminClient() {
+  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  return createClient(url!, process.env.SUPABASE_SECRET_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -40,12 +48,22 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from login/signup
   if (user && (pathname === '/login' || pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // Use admin client to bypass RLS recursion on profiles table
+    const adminClient = createMiddlewareAdminClient()
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const destination = profile?.role === 'admin' ? '/admin' : '/dashboard'
+    return NextResponse.redirect(new URL(destination, request.url))
   }
 
   // Admin route protection — check role
   if (user && pathname.startsWith('/admin')) {
-    const { data: profile } = await supabase
+    const adminClient = createMiddlewareAdminClient()
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)

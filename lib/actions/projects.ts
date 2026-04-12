@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { projectSchema, type ProjectFormValues } from '@/lib/validations/project'
 import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { updateOnboardingStep } from '@/lib/actions/onboarding'
 
 export async function createProjectAction(data: ProjectFormValues) {
   const parsed = projectSchema.safeParse(data)
@@ -36,6 +37,8 @@ export async function createProjectAction(data: ProjectFormValues) {
     .single()
 
   if (error) return { data: null, error: error.message }
+
+  updateOnboardingStep('has_created_project', true).catch(() => {})
 
   revalidatePath('/dashboard/projects')
   return { data: project, error: null }

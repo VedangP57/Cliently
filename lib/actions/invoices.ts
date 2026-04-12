@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { invoiceSchema, type InvoiceFormValues } from '@/lib/validations/invoice'
 import { generateSlug } from '@/lib/utils'
 import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { updateOnboardingStep } from '@/lib/actions/onboarding'
 
 export async function createInvoiceAction(data: InvoiceFormValues) {
   const parsed = invoiceSchema.safeParse(data)
@@ -37,6 +38,9 @@ export async function createInvoiceAction(data: InvoiceFormValues) {
     .single()
 
   if (error) return { data: null, error: error.message }
+
+  updateOnboardingStep('has_created_invoice', true).catch(() => {})
+
   revalidatePath('/dashboard/invoices')
   return { data: invoice, error: null }
 }

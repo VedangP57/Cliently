@@ -5,6 +5,8 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Topbar } from '@/components/layout/Topbar'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Toaster } from '@/components/ui/toaster'
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist'
+import { getOnboardingProgress } from '@/lib/actions/onboarding'
 
 export default async function DashboardLayout({
   children,
@@ -43,6 +45,8 @@ export default async function DashboardLayout({
     avatar_url: profile?.avatar_url ?? null,
   }
 
+  const onboarding = await getOnboardingProgress()
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar user={currentUser} />
@@ -53,6 +57,9 @@ export default async function DashboardLayout({
         </main>
         <MobileNav />
       </div>
+      {onboarding && !onboarding.completed_at && (
+        <OnboardingChecklist progress={onboarding} />
+      )}
       <Toaster />
     </div>
   )

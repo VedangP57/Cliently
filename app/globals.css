@@ -157,6 +157,7 @@
     @apply bg-background text-foreground;
     font-family: 'Avenir LT Pro', system-ui, -apple-system, sans-serif;
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -216,18 +217,8 @@
   text-align: center !important;
 }
 
-.user-table .ant-table-thead .ant-table-cell:nth-child(2),
-.user-table .ant-table-thead .ant-table-cell:nth-child(3) {
-  text-align: left !important;
-}
-
 .user-table .ant-table-tbody .ant-table-row .ant-table-cell {
   text-align: center !important;
-}
-
-.user-table .ant-table-tbody .ant-table-row .ant-table-cell:nth-child(2),
-.user-table .ant-table-tbody .ant-table-row .ant-table-cell:nth-child(3) {
-  text-align: left !important;
 }
 
 .dark .ant-table-tbody .ant-table-row:last-child .ant-table-cell {
@@ -306,4 +297,40 @@
 
 .ant-pagination-mini .ant-pagination-item {
   border-radius: 50%;
+}
+
+/* Hide scrollbar globally — outside @layer for max specificity */
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Fix autofill input background in dark mode */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px hsl(0 0% 10.2%) inset !important;
+  -webkit-text-fill-color: hsl(0 0% 95%) !important;
+  caret-color: hsl(0 0% 95%) !important;
+  border-color: hsl(0 0% 16%) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* Fix autofill input background in light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px hsl(0 0% 100%) inset !important;
+  -webkit-text-fill-color: hsl(222.2 84% 4.9%) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
 }

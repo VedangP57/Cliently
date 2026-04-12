@@ -35,7 +35,7 @@ import {
 import { logoutAction } from '@/lib/actions/auth'
 import { getInitials } from '@/lib/utils'
 
-const navItems = [
+const dashboardNavItems = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Clients', href: '/dashboard/clients', icon: Users },
   { label: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
@@ -50,18 +50,29 @@ const navItems = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
+const adminNavItems = [
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Users', href: '/admin/users', icon: Users },
+  { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
+]
+
 interface SidebarProps {
   user: {
     full_name: string | null
     email: string
     avatar_url: string | null
   }
+  variant?: 'dashboard' | 'admin'
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, variant = 'dashboard' }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const navItems = variant === 'admin' ? adminNavItems : dashboardNavItems
+  const homeHref = variant === 'admin' ? '/admin' : '/dashboard'
+  const settingsHref = variant === 'admin' ? '/admin/settings' : '/dashboard/settings'
 
   useEffect(() => {
     setMounted(true)
@@ -76,7 +87,7 @@ export function Sidebar({ user }: SidebarProps) {
     >
       <div className={cn('flex items-center border-b h-16 px-4', collapsed ? 'justify-center' : 'justify-between')}>
         {!collapsed && (
-          <Link href="/dashboard" className="font-bold text-xl">
+          <Link href={homeHref} className="font-bold text-xl">
             Cliently
           </Link>
         )}
@@ -97,8 +108,8 @@ export function Sidebar({ user }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
         {navItems.map((item) => {
           const isActive = mounted && (
-            item.href === '/dashboard'
-              ? pathname === '/dashboard'
+            item.href === '/dashboard' || item.href === '/admin'
+              ? pathname === item.href
               : pathname.startsWith(item.href)
           )
           return (
@@ -150,7 +161,7 @@ export function Sidebar({ user }: SidebarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 translate-x-2">
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings" className="flex items-center gap-2">
+                  <Link href={settingsHref} className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
                     Settings
                   </Link>

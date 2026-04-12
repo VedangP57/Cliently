@@ -227,12 +227,15 @@ export default function LandingPage() {
             and start growing your business.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" asChild className="min-w-[180px]">
-              <TrackedCtaLink href="/signup">
+            <TrackedCtaLink href="/signup">
+              <button
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-11 px-8 min-w-[180px] transition-colors"
+                style={{ backgroundColor: '#5e5cc5', color: '#ffffff' }}
+              >
                 Get Started Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </TrackedCtaLink>
-            </Button>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </TrackedCtaLink>
             <Button size="lg" variant="outline" asChild className="min-w-[180px]">
               <Link href="#features">See Features</Link>
             </Button>
@@ -469,25 +472,23 @@ export default function LandingPage() {
             one platform. Free to start, no credit card required.
           </p>
           <div className="mt-8 flex justify-center gap-3">
-            <Button
-              size="lg"
-              variant="secondary"
-              asChild
-              className="min-w-[180px]"
-            >
-              <TrackedCtaLink href="/signup">
+            <TrackedCtaLink href="/signup">
+              <button
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-11 px-8 min-w-[180px] transition-colors"
+                style={{ backgroundColor: '#ffffff', color: '#18181b' }}
+              >
                 Get Started Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </TrackedCtaLink>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="min-w-[180px] border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <Link href="/pricing">View Pricing</Link>
-            </Button>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </TrackedCtaLink>
+            <Link href="/pricing">
+              <button
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-11 px-8 min-w-[180px] border transition-colors"
+                style={{ borderColor: 'rgba(255,255,255,0.25)', color: '#ffffff', backgroundColor: 'transparent' }}
+              >
+                View Pricing
+              </button>
+            </Link>
           </div>
           <div className="mt-8 flex items-center justify-center gap-6 text-sm text-primary-foreground/70">
             <div className="flex items-center gap-2">

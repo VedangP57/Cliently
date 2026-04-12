@@ -25,7 +25,9 @@ async function assertAdmin() {
     return { ok: false, error: 'Unauthorized' as const }
   }
 
-  const { data: profile } = await supabase
+  // Use admin client to bypass RLS infinite recursion on profiles table
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('profiles')
     .select('role')
     .eq('id', user.id)

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { timeLogSchema, type TimeLogFormValues } from '@/lib/validations/time-log'
 import { ensureProfile } from '@/lib/actions/ensure-profile'
+import { updateOnboardingStep } from '@/lib/actions/onboarding'
 
 export async function createTimeLogAction(data: TimeLogFormValues) {
   const parsed = timeLogSchema.safeParse(data)
@@ -35,6 +36,8 @@ export async function createTimeLogAction(data: TimeLogFormValues) {
     .single()
 
   if (error) return { data: null, error: error.message }
+
+  updateOnboardingStep('has_logged_time', true).catch(() => {})
 
   revalidatePath('/dashboard/time')
   return { data: timeLog, error: null }

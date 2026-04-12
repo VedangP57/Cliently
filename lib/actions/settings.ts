@@ -14,6 +14,7 @@ import {
   type DefaultsSettingsValues,
   type ProfileSettingsValues,
 } from '@/lib/validations/settings'
+import { updateOnboardingStep } from '@/lib/actions/onboarding'
 
 function isProfilesPolicyRecursionError(message: string | null | undefined) {
   return Boolean(message?.includes('infinite recursion detected in policy for relation "profiles"'))
@@ -84,6 +85,8 @@ export async function updateProfileSettingsAction(input: ProfileSettingsValues) 
   })
 
   if (error) return { data: null, error }
+
+  updateOnboardingStep('has_completed_profile', true).catch(() => {})
 
   revalidatePath('/dashboard/settings')
   return { data, error: null }

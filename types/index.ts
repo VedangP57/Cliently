@@ -157,3 +157,15 @@ export interface InvoiceItem {
   amount: number
   type: InvoiceItemType
 }
+
+export interface OnboardingProgress {
+  id: string
+  user_id: string
+  has_completed_profile: boolean
+  has_added_client: boolean
+  has_created_project: boolean
+  has_logged_time: boolean
+  has_created_invoice: boolean
+  completed_at: string | null
+  created_at: string
+}

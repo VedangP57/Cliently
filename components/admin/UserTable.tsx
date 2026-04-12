@@ -3,25 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import dayjs from 'dayjs'
-import { useToast } from '@/hooks/use-toast'
-import { updateUserRoleAction, toggleUserBanAction } from '@/lib/actions/admin'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import {
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Tooltip,
+  Input,
+  Select as AntdSelect,
+  Button as AntdButton,
+  Tag,
+  Switch as AntdSwitch,
+  type TableProps,
+} from 'antd'
+import { useToast } from '@/hooks/use-toast'
+import { updateUserRoleAction, toggleUserBanAction } from '@/lib/actions/admin'
+import { Search, Users } from 'lucide-react'
+import { EmptyState } from '@/components/shared/EmptyState'
 
 interface AdminUserRow {
   id: string
@@ -36,10 +31,30 @@ interface UserTableProps {
   users: AdminUserRow[]
 }
 
+type RoleFilter = 'all' | 'user' | 'admin'
+
+const ROLE_OPTIONS = [
+  { label: 'All Roles', value: 'all' },
+  { label: 'User', value: 'user' },
+  { label: 'Admin', value: 'admin' },
+]
+
 export function UserTable({ users }: UserTableProps) {
   const { toast } = useToast()
   const router = useRouter()
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
+
+  const filtered = users
+    .filter((u) => {
+      const matchesSearch =
+        u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase())
+      const matchesRole = roleFilter === 'all' || u.role === roleFilter
+      return matchesSearch && matchesRole
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName))
 
   async function changeRole(targetUserId: string, role: 'user' | 'admin') {
     setUpdatingUserId(targetUserId)
@@ -69,65 +84,130 @@ export function UserTable({ users }: UserTableProps) {
     router.refresh()
   }
 
+  const columns: TableProps<AdminUserRow>['columns'] = [
+    {
+      title: 'Name',
+      dataIndex: 'fullName',
+      key: 'fullName',
+      align: 'center',
+      render: (text) => <span className="font-medium">{text}</span>,
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      align: 'center',
+    },
+    {
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+      align: 'center',
+      render: (role, record) => (
+        <AntdSelect
+          value={role}
+          onChange={(value) => changeRole(record.id, value)}
+          disabled={updatingUserId === record.id}
+          className="w-28"
+          options={[
+            { label: 'User', value: 'user' },
+            { label: 'Admin', value: 'admin' },
+          ]}
+        />
+      ),
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      align: 'center',
+      render: (_, record) => (
+        <Tag color={record.isBanned ? 'red' : 'green'}>
+          {record.isBanned ? 'Disabled' : 'Active'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Created',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      align: 'center',
+      render: (val) => dayjs(val).format('MMM D, YYYY'),
+    },
+    {
+      title: 'Enabled',
+      key: 'enabled',
+      align: 'center',
+      width: 100,
+      render: (_, record) => (
+        <Tooltip title={record.isBanned ? 'Enable account' : 'Disable account'}>
+          <AntdSwitch
+            checked={!record.isBanned}
+            onChange={() => toggleBan(record.id, record.isBanned)}
+            loading={updatingUserId === record.id}
+            size="small"
+          />
+        </Tooltip>
+      ),
+    },
+  ]
+
+  if (filtered.length === 0 && users.length === 0) {
+    return (
+      <EmptyState
+        icon={Users}
+        title="No users found"
+        description="No registered users yet."
+      />
+    )
+  }
+
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Enabled</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.fullName}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={user.role}
-                    onValueChange={(value) => changeRole(user.id, value as 'user' | 'admin')}
-                    disabled={updatingUserId === user.id}
-                  >
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {user.role === 'admin' && <Badge>Admin</Badge>}
-                </div>
-              </TableCell>
-              <TableCell>{dayjs(user.createdAt).format('MMM D, YYYY')}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <Switch
-                    checked={!user.isBanned}
-                    onCheckedChange={() => toggleBan(user.id, user.isBanned)}
-                    disabled={updatingUserId === user.id}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {user.isBanned ? 'Disabled' : 'Enabled'}
-                  </span>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {users.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
-                No users found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-56">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search users..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-8 rounded-full text-sm"
+            allowClear
+          />
+        </div>
+
+        <AntdSelect
+          className="w-[130px] h-8 select-rounded-full"
+          value={roleFilter}
+          onChange={(value: RoleFilter) => setRoleFilter(value)}
+          options={ROLE_OPTIONS}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No users found"
+          description="Try adjusting your search or filter."
+        />
+      ) : (
+        <div className="user-table">
+          <Table<AdminUserRow>
+            columns={columns}
+            dataSource={filtered}
+            rowKey="id"
+            bordered
+            size="small"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: false,
+              hideOnSinglePage: true,
+              placement: 'bottomCenter',
+              className: 'ant-pagination-mini',
+            } as any}
+            scroll={{ x: 700 }}
+          />
+        </div>
+      )}
     </div>
   )
 }
