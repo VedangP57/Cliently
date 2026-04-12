@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useMemo, useTransition } from 'react'
-import { Plus, Trash2, Clock, Receipt, Copy, Save, Send, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, Clock, Receipt, Copy, Save, Send, CheckCircle, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,11 @@ import {
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useToast } from '@/hooks/use-toast'
 import { cn, formatCurrency, SELECT_NONE, toSelectValue, fromSelectValue } from '@/lib/utils'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { updateInvoiceAction } from '@/lib/actions/invoices'
 import {
   upsertInvoiceItemsAction,
@@ -39,6 +44,116 @@ const EMPTY_ITEM: InvoiceItemFormValues = {
   rate: 0,
   amount: 0,
   type: 'service',
+}
+
+function AiDescriptionAssist({
+  onUse,
+  projectTitle,
+  clientName,
+}: {
+  onUse: (description: string) => void
+  projectTitle?: string
+  clientName?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [prompt, setPrompt] = useState('')
+  const [result, setResult] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function generate() {
+    if (!prompt.trim()) return
+    setLoading(true)
+    setError('')
+    setResult('')
+    try {
+      const res = await fetch('/api/ai/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim(), projectTitle, clientName }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to generate')
+      } else {
+        setResult(data.description)
+      }
+    } catch {
+      setError('Network error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 shrink-0 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+          title="AI Assist — Generate professional description"
+        >
+          <Sparkles className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80" align="start">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">AI Description Generator</p>
+            <p className="text-xs text-muted-foreground">
+              Describe the work briefly and AI will write a professional description.
+            </p>
+          </div>
+          <Textarea
+            placeholder="e.g. designed homepage for 3 days"
+            rows={2}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                generate()
+              }
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            className="w-full"
+            onClick={generate}
+            disabled={loading || !prompt.trim()}
+          >
+            {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
+            Generate
+          </Button>
+          {error && (
+            <p className="text-xs text-destructive">{error}</p>
+          )}
+          {result && (
+            <div className="space-y-2">
+              <div className="rounded-md bg-muted p-2.5 text-sm">{result}</div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  onUse(result)
+                  setPrompt('')
+                  setResult('')
+                  setOpen(false)
+                }}
+              >
+                Use this
+              </Button>
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBuilderProps) {
@@ -243,11 +358,12 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
           </CardHeader>
           <CardContent>
             {/* Table header */}
-            <div className="hidden md:grid md:grid-cols-[1fr_80px_96px_96px_40px] gap-2 mb-2 px-1">
+            <div className="hidden md:grid md:grid-cols-[1fr_80px_96px_96px_40px_40px] gap-2 mb-2 px-1">
               <Label className="text-xs text-muted-foreground">Description</Label>
               <Label className="text-xs text-muted-foreground">Qty</Label>
               <Label className="text-xs text-muted-foreground">Rate</Label>
               <Label className="text-xs text-muted-foreground">Amount</Label>
+              <span />
               <span />
             </div>
 
@@ -257,7 +373,7 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
                   key={index}
                   className={cn(
                     'grid gap-2 items-start rounded-md p-1',
-                    'grid-cols-1 md:grid-cols-[1fr_80px_96px_96px_40px]'
+                    'grid-cols-1 md:grid-cols-[1fr_80px_96px_96px_40px_40px]'
                   )}
                 >
                   <div>
@@ -308,6 +424,11 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                  <AiDescriptionAssist
+                    onUse={(desc) => updateItem(index, 'description', desc)}
+                    projectTitle={projects.find((p) => p.id === projectId)?.title}
+                    clientName={clients.find((c) => c.id === clientId)?.name}
+                  />
                 </div>
               ))}
             </div>
@@ -523,15 +644,6 @@ export default function InvoiceBuilder({ invoice, clients, projects }: InvoiceBu
             >
               <CheckCircle className="mr-2 h-4 w-4" />
               Mark as Paid
-            </Button>
-            <Button
-              className="w-full"
-              variant="secondary"
-              onClick={copyShareLink}
-              disabled={isPending}
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy Link
             </Button>
           </CardContent>
         </Card>

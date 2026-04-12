@@ -38,6 +38,11 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
+  // Block public share pages
+  if (pathname.startsWith('/share')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   // Redirect unauthenticated users trying to access dashboard or admin
   if (
     !user &&

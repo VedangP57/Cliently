@@ -147,15 +147,6 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
               onClick={() => router.push(`/dashboard/invoices/${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Copy Link">
-            <AntdButton
-              type="text"
-              size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-green-500 hover:text-green-600 hover:bg-transparent"
-              icon={<Copy className="h-3.5 w-3.5" />}
-              onClick={() => copyLink(record.slug)}
-            />
-          </Tooltip>
           <Tooltip title="Edit">
             <AntdButton
               type="text"

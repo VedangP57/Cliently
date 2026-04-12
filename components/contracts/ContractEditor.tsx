@@ -208,15 +208,6 @@ export function ContractEditor({ contract, clients, projects }: ContractEditorPr
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save
           </Button>
-          <Button variant="outline" className="w-full" onClick={handleGenerateLink}>
-            <Copy className="mr-2 h-4 w-4" />
-            {slug ? 'Copy Link' : 'Generate Link'}
-          </Button>
-          {slug && (
-            <p className="text-xs text-muted-foreground break-all">
-              /share/contract/{slug}
-            </p>
-          )}
         </div>
       </div>
     </div>
