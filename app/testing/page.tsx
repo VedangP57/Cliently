@@ -194,6 +194,7 @@ const treeData = [
 
 export default function TestingPage() {
   const { isDark, toggleTheme } = useIsDark();
+  const [mounted, setMounted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -201,6 +202,8 @@ export default function TestingPage() {
   const [msgApi, msgCtx] = message.useMessage();
   const [notifApi, notifCtx] = notification.useNotification();
   const tourRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
 
   return (
     <ConfigProvider>
@@ -312,11 +315,13 @@ export default function TestingPage() {
               <CCard title="FloatButton" num={2}>
                 <Text type="secondary">FloatButton renders fixed at the bottom-right corner.</Text>
                 <div style={{ position: "relative", height: 80, border: "1px dashed hsl(var(--border))", borderRadius: 8, marginTop: 8 }}>
-                  <FloatButton.Group shape="circle" style={{ insetInlineEnd: 16, bottom: 16 }}>
-                    <FloatButton icon={<PlusOutlined />} tooltip="New Invoice" />
-                    <FloatButton icon={<MailOutlined />} tooltip="Send Email" />
-                    <FloatButton.BackTop visibilityHeight={0} style={{ position: "relative", inset: "unset" }} />
-                  </FloatButton.Group>
+                  {mounted && (
+                    <FloatButton.Group shape="circle" style={{ insetInlineEnd: 16, bottom: 16 }}>
+                      <FloatButton icon={<PlusOutlined />} tooltip="New Invoice" />
+                      <FloatButton icon={<MailOutlined />} tooltip="Send Email" />
+                      <FloatButton.BackTop visibilityHeight={0} style={{ position: "relative", inset: "unset" }} />
+                    </FloatButton.Group>
+                  )}
                 </div>
               </CCard>
 
