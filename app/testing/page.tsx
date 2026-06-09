@@ -207,7 +207,7 @@ export default function TestingPage() {
       <App>
         {msgCtx}
         {notifCtx}
-        <div style={{ background: "#f0f2f5", minHeight: "100vh" }}>
+        <div style={{ background: "hsl(var(--background))", minHeight: "100vh" }}>
 
           {/* ── PAGE HEADER ─────────────────────────────────────────── */}
           <div style={{ background: "linear-gradient(135deg, #001529 0%, #1677ff 100%)", padding: "48px 48px 40px", textAlign: "center" }}>
@@ -215,14 +215,14 @@ export default function TestingPage() {
               <path d="M854.6 288.7c6 6 9.4 14.1 9.4 22.6V928c0 17.7-14.3 32-32 32H192c-17.7 0-32-14.3-32-32V96c0-17.7 14.3-32 32-32h424.7c8.5 0 16.7 3.4 22.7 9.4l215.2 215.3zM790.2 326L602 137.8V326h188.2zM320 482a8 8 0 0 0-8 8v48a8 8 0 0 0 8 8h384a8 8 0 0 0 8-8v-48a8 8 0 0 0-8-8H320zm0 136a8 8 0 0 0-8 8v48a8 8 0 0 0 8 8h384a8 8 0 0 0 8-8v-48a8 8 0 0 0-8-8H320zm0 136a8 8 0 0 0-8 8v48a8 8 0 0 0 8 8h184a8 8 0 0 0 8-8v-48a8 8 0 0 0-8-8H320z" />
             </svg>
             <Title level={1} style={{ color: "#fff", margin: "0 0 8px" }}>Ant Design v6 — Component Showcase</Title>
-            <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 16 }}>
+            <Text style={{ color: "hsl(var(--foreground) / 0.75)", fontSize: 16 }}>
               Every component · General · Layout · Navigation · Data Entry · Data Display · Feedback · Other
             </Text>
           </div>
 
           {/* ── COMPONENT INDEX GRID ────────────────────────────────── */}
-          <div style={{ background: "#fff", padding: "24px 48px", borderBottom: "1px solid #f0f0f0" }}>
-            <Text style={{ fontSize: 13, fontWeight: 700, color: "#333", display: "block", marginBottom: 12 }}>
+          <div style={{ background: "hsl(var(--card))", padding: "24px 48px", borderBottom: "1px solid hsl(var(--border))" }}>
+            <Text style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", display: "block", marginBottom: 12 }}>
               Quick Jump — click any number to go directly to that component
             </Text>
             <Flex wrap gap={6}>
@@ -248,7 +248,7 @@ export default function TestingPage() {
               {Object.entries({ General: "general", Layout: "layout", Navigation: "nav", "Data Entry": "entry", "Data Display": "display", Feedback: "feedback", Other: "other" }).map(([label, key]) => (
                 <Space key={key} size={4}>
                   <span style={{ width: 10, height: 10, borderRadius: 2, background: SECTION_COLORS[key], display: "inline-block" }} />
-                  <Text style={{ fontSize: 11, color: "#666" }}>{label}</Text>
+                  <Text style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{label}</Text>
                 </Space>
               ))}
             </Flex>
@@ -256,7 +256,7 @@ export default function TestingPage() {
 
           {/* ── STICKY ANCHOR NAV ───────────────────────────────────── */}
           <Affix offsetTop={0}>
-            <div style={{ background: "#fff", borderBottom: "1px solid #f0f0f0", padding: "0 48px", display: "flex", alignItems: "center" }}>
+            <div style={{ background: "hsl(var(--card))", borderBottom: "1px solid hsl(var(--border))", padding: "0 48px", display: "flex", alignItems: "center" }}>
               <div style={{ flex: 1 }}>
                 <Anchor direction="horizontal" offsetTop={0}
                   items={[
