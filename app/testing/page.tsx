@@ -178,6 +178,23 @@ const tableData = [
   { key: "3", name: "Carol White", role: "Manager", status: "Active" },
 ];
 
+type ProjectRow = { key: string; title: string; client: string; status: string; deadline: string; budget: string };
+
+const projectDemoData: ProjectRow[] = [
+  { key: "1",  title: "Cliently Redesign",    client: "Alice Johnson", status: "in_progress", deadline: "Jun 30, 2026", budget: "$4,500" },
+  { key: "2",  title: "Mobile App MVP",        client: "Bob Smith",     status: "planning",    deadline: "Aug 15, 2026", budget: "$12,000" },
+  { key: "3",  title: "API Integration",       client: "Carol White",   status: "review",      deadline: "Jun 10, 2026", budget: "$2,800" },
+  { key: "4",  title: "Dashboard Analytics",   client: "David Lee",     status: "completed",   deadline: "May 20, 2026", budget: "$3,200" },
+  { key: "5",  title: "E-Commerce Platform",   client: "Eva Green",     status: "in_progress", deadline: "Sep 1, 2026",  budget: "$18,500" },
+  { key: "6",  title: "Brand Guidelines",      client: "Frank Miller",  status: "completed",   deadline: "Apr 30, 2026", budget: "$1,500" },
+  { key: "7",  title: "CRM Migration",         client: "Grace Hall",    status: "on_hold",     deadline: "Jul 15, 2026", budget: "$6,400" },
+  { key: "8",  title: "SEO Audit",             client: "Henry Adams",   status: "planning",    deadline: "Jun 25, 2026", budget: "$900" },
+  { key: "9",  title: "Payment Gateway",       client: "Iris Chen",     status: "in_progress", deadline: "Jul 5, 2026",  budget: "$5,200" },
+  { key: "10", title: "Email Automation",      client: "Jack Wilson",   status: "review",      deadline: "Jun 12, 2026", budget: "$2,100" },
+  { key: "11", title: "Landing Page Suite",    client: "Karen Brown",   status: "cancelled",   deadline: "May 1, 2026",  budget: "$1,800" },
+  { key: "12", title: "Inventory System",      client: "Leo Martinez",  status: "in_progress", deadline: "Aug 30, 2026", budget: "$9,700" },
+];
+
 const treeData = [
   {
     title: "Invoices", key: "invoices",
@@ -195,6 +212,8 @@ const treeData = [
 export default function TestingPage() {
   const { isDark, toggleTheme } = useIsDark();
   const [mounted, setMounted] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectStatus, setProjectStatus] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -260,18 +279,21 @@ export default function TestingPage() {
           {/* ── STICKY ANCHOR NAV ───────────────────────────────────── */}
           <Affix offsetTop={0}>
             <div style={{ background: "hsl(var(--card))", borderBottom: "1px solid hsl(var(--border))", padding: "0 48px", display: "flex", alignItems: "center" }}>
-              <div style={{ flex: 1 }}>
-                <Anchor direction="horizontal" offsetTop={0}
-                  items={[
-                    { key: "general", href: "#general", title: "General" },
-                    { key: "layout", href: "#layout", title: "Layout" },
-                    { key: "nav", href: "#nav", title: "Navigation" },
-                    { key: "entry", href: "#entry", title: "Data Entry" },
-                    { key: "display", href: "#display", title: "Data Display" },
-                    { key: "feedback", href: "#feedback", title: "Feedback" },
-                    { key: "other", href: "#other", title: "Other" },
-                  ]}
-                />
+              <div style={{ flex: 1, display: "flex", overflow: "auto" }}>
+                {([
+                  ["general", "General"], ["layout", "Layout"], ["nav", "Navigation"],
+                  ["entry", "Data Entry"], ["display", "Data Display"],
+                  ["feedback", "Feedback"], ["other", "Other"],
+                ] as [string, string][]).map(([id, label]) => (
+                  <a key={id} href={`#${id}`} style={{
+                    display: "inline-flex", alignItems: "center",
+                    padding: "12px 16px", fontSize: 14, fontWeight: 500,
+                    color: "hsl(var(--muted-foreground))", textDecoration: "none",
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}>
+                    {label}
+                  </a>
+                ))}
               </div>
               <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
                 <Button
@@ -946,15 +968,95 @@ export default function TestingPage() {
               </CCard>
 
               <CCard title="Table" num={50}>
-                <Table columns={tableColumns} dataSource={tableData} bordered size="small"
-                  summary={() => (
-                    <Table.Summary fixed>
-                      <Table.Summary.Row>
-                        <Table.Summary.Cell index={0} colSpan={4}><Text type="secondary">3 team members total</Text></Table.Summary.Cell>
-                      </Table.Summary.Row>
-                    </Table.Summary>
-                  )}
-                />
+                <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 12 }} wrap>
+                  <Space>
+                    <Input.Search
+                      placeholder="Search projects..."
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      style={{ width: 220 }}
+                      allowClear
+                    />
+                    <Select
+                      value={projectStatus}
+                      onChange={setProjectStatus}
+                      style={{ width: 140 }}
+                      options={[
+                        { value: "all",         label: "All Status" },
+                        { value: "planning",    label: "Planning" },
+                        { value: "in_progress", label: "In Progress" },
+                        { value: "review",      label: "Review" },
+                        { value: "completed",   label: "Completed" },
+                        { value: "on_hold",     label: "On Hold" },
+                        { value: "cancelled",   label: "Cancelled" },
+                      ]}
+                    />
+                  </Space>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {projectDemoData.filter(r =>
+                      (projectStatus === "all" || r.status === projectStatus) &&
+                      r.title.toLowerCase().includes(projectSearch.toLowerCase())
+                    ).length} projects
+                  </Text>
+                </Space>
+                <div className="user-table">
+                  <Table<ProjectRow>
+                    columns={[
+                      {
+                        title: "Project", dataIndex: "title", key: "title",
+                        render: (v: string) => <Text strong style={{ color: "#5e5cc5" }}>{v}</Text>,
+                      },
+                      {
+                        title: "Client", dataIndex: "client", key: "client",
+                        render: (v: string) => <Text type="secondary">{v}</Text>,
+                      },
+                      {
+                        title: "Status", dataIndex: "status", key: "status", align: "center" as const,
+                        render: (s: string) => {
+                          const map: Record<string, { color: string; label: string }> = {
+                            planning:    { color: "blue",       label: "Planning" },
+                            in_progress: { color: "processing", label: "In Progress" },
+                            review:      { color: "orange",     label: "Review" },
+                            completed:   { color: "green",      label: "Completed" },
+                            on_hold:     { color: "default",    label: "On Hold" },
+                            cancelled:   { color: "red",        label: "Cancelled" },
+                          };
+                          const { color, label } = map[s] ?? { color: "default", label: s };
+                          return <Tag color={color}>{label}</Tag>;
+                        },
+                      },
+                      {
+                        title: "Deadline", dataIndex: "deadline", key: "deadline", align: "center" as const,
+                        render: (v: string) => <Text type="secondary">{v}</Text>,
+                      },
+                      { title: "Budget", dataIndex: "budget", key: "budget", align: "right" as const },
+                      {
+                        title: "Action", key: "action", align: "center" as const, width: 120,
+                        render: () => (
+                          <Space>
+                            <Button size="small" type="text" icon={<EyeOutlined />} style={{ color: "#1677ff" }} />
+                            <Button size="small" type="text" icon={<EditOutlined />} style={{ color: "#fa8c16" }} />
+                            <Button size="small" type="text" icon={<DeleteOutlined />} style={{ color: "#ff4d4f" }} />
+                          </Space>
+                        ),
+                      },
+                    ]}
+                    dataSource={projectDemoData.filter(r =>
+                      (projectStatus === "all" || r.status === projectStatus) &&
+                      r.title.toLowerCase().includes(projectSearch.toLowerCase())
+                    )}
+                    rowKey="key"
+                    bordered
+                    size="small"
+                    pagination={{
+                      pageSize: 5,
+                      showSizeChanger: false,
+                      showTotal: (t) => `${t} projects`,
+                      hideOnSinglePage: true,
+                    }}
+                    scroll={{ x: 700 }}
+                  />
+                </div>
               </CCard>
 
               <CCard title="List" num={51}>
