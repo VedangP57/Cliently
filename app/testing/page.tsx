@@ -193,6 +193,7 @@ const treeData = [
 ];
 
 export default function TestingPage() {
+  const { isDark, toggleTheme } = useIsDark();
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -255,18 +256,29 @@ export default function TestingPage() {
 
           {/* ── STICKY ANCHOR NAV ───────────────────────────────────── */}
           <Affix offsetTop={0}>
-            <div style={{ background: "#fff", borderBottom: "1px solid #f0f0f0", padding: "0 48px" }}>
-              <Anchor direction="horizontal" offsetTop={0}
-                items={[
-                  { key: "general", href: "#general", title: "General" },
-                  { key: "layout", href: "#layout", title: "Layout" },
-                  { key: "nav", href: "#nav", title: "Navigation" },
-                  { key: "entry", href: "#entry", title: "Data Entry" },
-                  { key: "display", href: "#display", title: "Data Display" },
-                  { key: "feedback", href: "#feedback", title: "Feedback" },
-                  { key: "other", href: "#other", title: "Other" },
-                ]}
-              />
+            <div style={{ background: "#fff", borderBottom: "1px solid #f0f0f0", padding: "0 48px", display: "flex", alignItems: "center" }}>
+              <div style={{ flex: 1 }}>
+                <Anchor direction="horizontal" offsetTop={0}
+                  items={[
+                    { key: "general", href: "#general", title: "General" },
+                    { key: "layout", href: "#layout", title: "Layout" },
+                    { key: "nav", href: "#nav", title: "Navigation" },
+                    { key: "entry", href: "#entry", title: "Data Entry" },
+                    { key: "display", href: "#display", title: "Data Display" },
+                    { key: "feedback", href: "#feedback", title: "Feedback" },
+                    { key: "other", href: "#other", title: "Other" },
+                  ]}
+                />
+              </div>
+              <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                  onClick={toggleTheme}
+                  style={{ flexShrink: 0, marginLeft: 8 }}
+                />
+              </Tooltip>
             </div>
           </Affix>
 
