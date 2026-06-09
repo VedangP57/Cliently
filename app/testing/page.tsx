@@ -1233,8 +1233,8 @@ export default function TestingPage() {
                   <Button onClick={() => setDrawerOpen(true)}>Open Drawer</Button>
                   <Button onClick={() => msgApi.success("Invoice sent successfully!")}>Message Success</Button>
                   <Button onClick={() => msgApi.warning("Payment overdue by 5 days!")}>Message Warning</Button>
-                  <Button onClick={() => notifApi.info({ message: "New Invoice Created", description: "Invoice #INV-004 for Bob Smith · $850", placement: "topRight" })}>Notification</Button>
-                  <Button onClick={() => notifApi.success({ message: "Payment Received", description: "$1,200 from Alice Johnson" })}>Notification Success</Button>
+                  <Button onClick={() => notifApi.info({ title: "New Invoice Created", description: "Invoice #INV-004 for Bob Smith · $850", placement: "topRight" })}>Notification</Button>
+                  <Button onClick={() => notifApi.success({ title: "Payment Received", description: "$1,200 from Alice Johnson" })}>Notification Success</Button>
                   <Popconfirm title="Delete this invoice?" description="This action cannot be undone." onConfirm={() => msgApi.success("Invoice deleted.")} okText="Delete" okButtonProps={{ danger: true }}>
                     <Button danger>Delete with Confirm</Button>
                   </Popconfirm>
