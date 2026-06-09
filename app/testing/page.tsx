@@ -410,8 +410,8 @@ export default function TestingPage() {
                   <Button>Left</Button><Button type="primary">Center</Button><Button>Right</Button>
                 </Flex>
                 <Flex vertical gap={8} style={{ marginTop: 8 }}>
-                  <Alert message="Flex vertical item 1" type="info" />
-                  <Alert message="Flex vertical item 2" type="success" />
+                  <Alert title="Flex vertical item 1" type="info" />
+                  <Alert title="Flex vertical item 2" type="success" />
                 </Flex>
               </CCard>
 
@@ -666,7 +666,11 @@ export default function TestingPage() {
                       <Input placeholder="Basic input" />
                       <Input placeholder="With prefix" prefix={<UserOutlined />} />
                       <Input placeholder="With suffix" suffix={<SmileOutlined />} />
-                      <Input addonBefore="$" addonAfter=".00" placeholder="Amount" />
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Input style={{ width: 36, textAlign: "center" }} defaultValue="$" readOnly />
+                        <Input placeholder="Amount" />
+                        <Input style={{ width: 48, textAlign: "center" }} defaultValue=".00" readOnly />
+                      </Space.Compact>
                       <Input.Search placeholder="Search invoices..." enterButton="Search" />
                       <Input.Password placeholder="Password" />
                       <Input.TextArea rows={3} placeholder="Multi-line text area..." showCount maxLength={200} />
@@ -675,10 +679,17 @@ export default function TestingPage() {
                   </CCard>
                   <CCard title="InputNumber" num={26}>
                     <Space orientation="vertical" style={{ width: "100%" }}>
-                      <InputNumber min={0} max={100} defaultValue={50} style={{ width: "100%" }} addonBefore="%" />
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Input style={{ width: 36, textAlign: "center" }} defaultValue="%" readOnly />
+                        <InputNumber min={0} max={100} defaultValue={50} style={{ flex: 1, width: "100%" }} />
+                      </Space.Compact>
                       <InputNumber prefix="$" defaultValue={1200} precision={2} style={{ width: "100%" }} />
                       <InputNumber defaultValue={75} formatter={(v) => `${v}%`} parser={(v) => Number(v?.replace("%", "")) as 75} style={{ width: "100%" }} />
-                      <InputNumber min={1} max={12} defaultValue={6} addonBefore="Month" addonAfter="of year" style={{ width: "100%" }} />
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Input style={{ width: 58, textAlign: "center" }} defaultValue="Month" readOnly />
+                        <InputNumber min={1} max={12} defaultValue={6} style={{ flex: 1, width: "100%" }} />
+                        <Input style={{ width: 62, textAlign: "center" }} defaultValue="of year" readOnly />
+                      </Space.Compact>
                     </Space>
                   </CCard>
                   <CCard title="Mentions" num={27}>
@@ -916,7 +927,7 @@ export default function TestingPage() {
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
                     <Card title="Invoice #001" extra={<Link>View</Link>} actions={[<EditOutlined key="edit" />, <EyeOutlined key="view" />, <DeleteOutlined key="delete" />]}>
-                      <Statistic title="Amount" value={1200} prefix="$" valueStyle={{ fontSize: 20 }} />
+                      <Statistic title="Amount" value={1200} prefix="$" styles={{ content: { fontSize: 20 } }} />
                       <Tag color="green" style={{ marginTop: 8 }}>Paid</Tag>
                     </Card>
                   </Col>
@@ -956,7 +967,7 @@ export default function TestingPage() {
               </CCard>
 
               <CCard title="Descriptions" num={49}>
-                <Descriptions title="Invoice Details" bordered extra={<Button size="small">Edit</Button>}>
+                <Descriptions title="Invoice Details" bordered column={3} extra={<Button size="small">Edit</Button>}>
                   <Descriptions.Item label="Invoice #">INV-20260409</Descriptions.Item>
                   <Descriptions.Item label="Client">Alice Johnson</Descriptions.Item>
                   <Descriptions.Item label="Status"><Tag color="green">Paid</Tag></Descriptions.Item>
@@ -1059,19 +1070,23 @@ export default function TestingPage() {
                 </div>
               </CCard>
 
-              <CCard title="List" num={51}>
-                <List bordered
-                  dataSource={[
+              <CCard title="List (custom — antd List deprecated in v6)" num={51}>
+                <Space orientation="vertical" style={{ width: "100%" }}>
+                  {[
                     { title: "Invoice #001 — Alice Johnson", desc: "$1,200 · Paid · Apr 30", status: "Paid" },
                     { title: "Invoice #002 — Bob Smith", desc: "$850 · Pending · May 15", status: "Pending" },
                     { title: "Invoice #003 — Carol White", desc: "$2,100 · Overdue · Apr 1", status: "Overdue" },
-                  ]}
-                  renderItem={(item) => (
-                    <List.Item extra={<Tag color={{ Paid: "green", Pending: "orange", Overdue: "red" }[item.status]}>{item.status}</Tag>}>
-                      <List.Item.Meta avatar={<Avatar icon={<UserOutlined />} />} title={item.title} description={item.desc} />
-                    </List.Item>
-                  )}
-                />
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", border: `1px solid hsl(var(--border))`, borderRadius: 8 }}>
+                      <Avatar icon={<UserOutlined />} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Text strong style={{ display: "block", fontSize: 13 }}>{item.title}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>{item.desc}</Text>
+                      </div>
+                      <Tag color={{ Paid: "green", Pending: "orange", Overdue: "red" }[item.status as "Paid" | "Pending" | "Overdue"]}>{item.status}</Tag>
+                    </div>
+                  ))}
+                </Space>
               </CCard>
 
               <CCard title="Timeline" num={52}>
@@ -1277,7 +1292,7 @@ export default function TestingPage() {
               </CCard>
 
               <CCard title="App (context wrapper)" num={69}>
-                <Alert message={<><Text code>{"<App>"}</Text> wraps this entire page, enabling <Text code>message.useMessage()</Text> and <Text code>notification.useNotification()</Text> hooks. Click the buttons in the Feedback section to see them in action.</>} type="info" showIcon />
+                <Alert title={<><Text code>{"<App>"}</Text> wraps this entire page, enabling <Text code>message.useMessage()</Text> and <Text code>notification.useNotification()</Text> hooks. Click the buttons in the Feedback section to see them in action.</>} type="info" showIcon />
               </CCard>
 
               <CCard title="Util — theme token access" num={71}>
