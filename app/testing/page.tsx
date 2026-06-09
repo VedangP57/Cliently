@@ -65,7 +65,7 @@ function CCard({ title, num, children }: { title: string; num: number; children:
         title={
           <Space size={8}>
             <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, background: "#1677ff", color: "#fff", borderRadius: 4, fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{num}</span>
-            <Text style={{ fontSize: 12, color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{title}</Text>
+            <Text style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{title}</Text>
           </Space>
         }
         style={{ marginBottom: 16 }}
@@ -311,7 +311,7 @@ export default function TestingPage() {
 
               <CCard title="FloatButton" num={2}>
                 <Text type="secondary">FloatButton renders fixed at the bottom-right corner.</Text>
-                <div style={{ position: "relative", height: 80, border: "1px dashed #d9d9d9", borderRadius: 8, marginTop: 8 }}>
+                <div style={{ position: "relative", height: 80, border: "1px dashed hsl(var(--border))", borderRadius: 8, marginTop: 8 }}>
                   <FloatButton.Group shape="circle" style={{ insetInlineEnd: 16, bottom: 16 }}>
                     <FloatButton icon={<PlusOutlined />} tooltip="New Invoice" />
                     <FloatButton icon={<MailOutlined />} tooltip="Send Email" />
@@ -405,7 +405,7 @@ export default function TestingPage() {
               </CCard>
 
               <CCard title="Layout" num={8}>
-                <Layout style={{ minHeight: 180, borderRadius: 8, overflow: "hidden", border: "1px solid #d9d9d9" }}>
+                <Layout style={{ minHeight: 180, borderRadius: 8, overflow: "hidden", border: "1px solid hsl(var(--border))" }}>
                   <Header style={{ background: "#001529", color: "#fff", display: "flex", alignItems: "center", padding: "0 24px" }}>
                     <Text style={{ color: "#fff", fontWeight: 600 }}>Header</Text>
                   </Header>
@@ -413,11 +413,11 @@ export default function TestingPage() {
                     <Sider width={100} style={{ background: "#002140", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Text style={{ color: "rgba(255,255,255,0.65)" }}>Sider</Text>
                     </Sider>
-                    <Content style={{ background: "#f5f5f5", padding: 24, minHeight: 80 }}>
+                    <Content style={{ background: "hsl(var(--muted))", padding: 24, minHeight: 80 }}>
                       <Text type="secondary">Main Content Area</Text>
                     </Content>
                   </Layout>
-                  <Footer style={{ textAlign: "center", background: "#f0f0f0", padding: "12px 24px" }}>
+                  <Footer style={{ textAlign: "center", background: "hsl(var(--accent))", padding: "12px 24px" }}>
                     <Text type="secondary">Footer</Text>
                   </Footer>
                 </Layout>
@@ -455,7 +455,7 @@ export default function TestingPage() {
               </CCard>
 
               <CCard title="Splitter" num={11}>
-                <Splitter style={{ height: 140, border: "1px solid #d9d9d9", borderRadius: 8, overflow: "hidden" }}>
+                <Splitter style={{ height: 140, border: "1px solid hsl(var(--border))", borderRadius: 8, overflow: "hidden" }}>
                   <Splitter.Panel defaultSize="35%" min="20%" max="70%">
                     <div style={{ padding: 16 }}>
                       <Text strong>Left Panel</Text><br />
@@ -1081,7 +1081,7 @@ export default function TestingPage() {
                   <Space orientation="vertical" align="center"><Spin /><Text style={{ fontSize: 11 }}>default</Text></Space>
                   <Space orientation="vertical" align="center"><Spin size="large" /><Text style={{ fontSize: 11 }}>large</Text></Space>
                   <Spin description="Loading invoices..." size="large">
-                    <div style={{ padding: 24, background: "#f5f5f5", borderRadius: 8, width: 200, textAlign: "center" }}>
+                    <div style={{ padding: 24, background: "hsl(var(--muted))", borderRadius: 8, width: 200, textAlign: "center" }}>
                       <Text type="secondary">Content area</Text>
                     </div>
                   </Spin>
@@ -1099,7 +1099,7 @@ export default function TestingPage() {
 
               <CCard title="Watermark" num={62}>
                 <Watermark content="CONFIDENTIAL">
-                  <div style={{ height: 120, background: "#fafafa", border: "1px dashed #d9d9d9", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ height: 120, background: "hsl(var(--muted))", border: "1px dashed hsl(var(--border))", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Text type="secondary">Document content protected by watermark</Text>
                   </div>
                 </Watermark>
