@@ -521,7 +521,7 @@ export default function TestingPage() {
                     { key: "settings", label: "Settings", icon: <SettingOutlined />, children: [{ key: "profile", label: "Profile" }, { key: "billing", label: "Billing" }] },
                   ]}
                 />
-                <Menu mode="inline" defaultSelectedKeys={["1"]} style={{ width: 220, border: "1px solid #f0f0f0", borderRadius: 8 }}
+                <Menu mode="inline" defaultSelectedKeys={["1"]} style={{ width: 220, border: "1px solid hsl(var(--border))", borderRadius: 8 }}
                   items={[
                     { key: "1", icon: <AppstoreOutlined />, label: "Overview" },
                     { key: "2", icon: <FileOutlined />, label: "Invoices", children: [{ key: "2a", label: "All" }, { key: "2b", label: "Draft" }, { key: "2c", label: "Sent" }] },
