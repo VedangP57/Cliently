@@ -179,14 +179,14 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       width: 140,
       align: 'center',
       render: (_, record) => (
-        <div className="flex items-center justify-center gap-1">
+        <div className="flex items-center justify-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
           <Tooltip title="View">
             <AntdButton
               type="text"
               size="small"
               className="flex items-center justify-center h-8 w-8 rounded-lg text-blue-500! hover:text-blue-600! hover:bg-transparent"
               icon={<ExternalLink className="h-3.5 w-3.5" />}
-              onClick={() => router.push(`/dashboard/projects/${record.id}`)}
+              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/projects/${record.id}`) }}
             />
           </Tooltip>
           <Tooltip title="Edit">
@@ -195,7 +195,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               size="small"
               className="flex items-center justify-center h-8 w-8 rounded-lg text-amber-500! hover:text-amber-600! hover:bg-transparent"
               icon={<SquarePen className="h-3.5 w-3.5" />}
-              onClick={() => openEdit(record)}
+              onClick={(e) => { e.stopPropagation(); openEdit(record) }}
             />
           </Tooltip>
           <Tooltip title="Delete">
@@ -204,7 +204,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               size="small"
               className="flex items-center justify-center h-8 w-8 rounded-lg text-red-500! hover:text-red-600! hover:bg-transparent"
               icon={<Trash className="h-3.5 w-3.5" />}
-              onClick={() => setDeleteId(record.id)}
+              onClick={(e) => { e.stopPropagation(); setDeleteId(record.id) }}
             />
           </Tooltip>
         </div>
