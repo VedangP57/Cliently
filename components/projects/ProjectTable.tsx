@@ -15,7 +15,7 @@ import {
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ProjectModal } from '@/components/projects/ProjectModal'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import { deleteProjectAction, bulkUpdateStatusAction } from '@/lib/actions/projects'
+import { deleteProjectAction, bulkUpdateStatusAction, bulkDeleteProjectsAction } from '@/lib/actions/projects'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -150,14 +150,17 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
 
   async function handleBulkDelete() {
     setBulkUpdating(true)
-    for (const id of selectedIds) {
-      await deleteProjectAction(id)
-    }
+    const count = selectedIds.length
+    const result = await bulkDeleteProjectsAction(selectedIds)
     setBulkUpdating(false)
     setBulkDeleteOpen(false)
     setSelectedIds([])
-    toast({ title: `${selectedIds.length} projects deleted` })
-    router.refresh()
+    if (result.error) {
+      toast({ title: 'Error', description: result.error, variant: 'destructive' })
+    } else {
+      toast({ title: `${count} projects deleted` })
+      router.refresh()
+    }
   }
 
   const columns: ColumnsType<Project> = [

@@ -101,6 +101,11 @@ export async function deleteProjectAction(id: string) {
 }
 
 export async function bulkUpdateStatusAction(ids: string[], status: string) {
+  if (!ids.length) return { error: null }
+
+  const validStatuses = ['planning', 'in_progress', 'review', 'completed', 'on_hold', 'cancelled']
+  if (!validStatuses.includes(status)) return { error: 'Invalid status' }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -111,6 +116,28 @@ export async function bulkUpdateStatusAction(ids: string[], status: string) {
   const { error } = await supabase
     .from('projects')
     .update({ status })
+    .in('id', ids)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/dashboard/projects')
+  return { error: null }
+}
+
+export async function bulkDeleteProjectsAction(ids: string[]) {
+  if (!ids.length) return { error: null }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase
+    .from('projects')
+    .delete()
     .in('id', ids)
     .eq('user_id', user.id)
 
