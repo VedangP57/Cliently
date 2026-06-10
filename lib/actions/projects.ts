@@ -99,3 +99,23 @@ export async function deleteProjectAction(id: string) {
   revalidatePath('/dashboard/projects')
   return { data: true, error: null }
 }
+
+export async function bulkUpdateStatusAction(ids: string[], status: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase
+    .from('projects')
+    .update({ status })
+    .in('id', ids)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/dashboard/projects')
+  return { error: null }
+}

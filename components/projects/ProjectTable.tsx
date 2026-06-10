@@ -10,11 +10,12 @@ import {
   Select as AntdSelect,
   Tooltip,
   Pagination,
+  Checkbox,
 } from 'antd'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ProjectModal } from '@/components/projects/ProjectModal'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import { deleteProjectAction } from '@/lib/actions/projects'
+import { deleteProjectAction, bulkUpdateStatusAction } from '@/lib/actions/projects'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -50,6 +51,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [sortField, setSortField] = useState<keyof Project | null>(null)
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
   const [view, setView] = useState<'table' | 'board'>('table')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [bulkUpdating, setBulkUpdating] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('projects-view') as 'table' | 'board' | null
@@ -103,6 +107,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     return (v: string) => {
       setter(v)
       setCurrentPage(1)
+      setSelectedIds([])
     }
   }
 
@@ -130,7 +135,67 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     setModalOpen(true)
   }
 
+  async function handleBulkStatusChange(status: string) {
+    setBulkUpdating(true)
+    const result = await bulkUpdateStatusAction(selectedIds, status)
+    setBulkUpdating(false)
+    if (result.error) {
+      toast({ title: 'Error', description: result.error, variant: 'destructive' })
+    } else {
+      toast({ title: `${selectedIds.length} projects updated` })
+      setSelectedIds([])
+      router.refresh()
+    }
+  }
+
+  async function handleBulkDelete() {
+    setBulkUpdating(true)
+    for (const id of selectedIds) {
+      await deleteProjectAction(id)
+    }
+    setBulkUpdating(false)
+    setBulkDeleteOpen(false)
+    setSelectedIds([])
+    toast({ title: `${selectedIds.length} projects deleted` })
+    router.refresh()
+  }
+
   const columns: ColumnsType<Project> = [
+    {
+      key: 'select',
+      width: 40,
+      align: 'center' as const,
+      title: (
+        <Checkbox
+          checked={paginatedData.length > 0 && paginatedData.every(p => selectedIds.includes(p.id))}
+          indeterminate={
+            paginatedData.some(p => selectedIds.includes(p.id)) &&
+            !paginatedData.every(p => selectedIds.includes(p.id))
+          }
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedIds(paginatedData.map(p => p.id))
+            } else {
+              setSelectedIds([])
+            }
+          }}
+        />
+      ),
+      render: (_: unknown, record: Project) => (
+        <Checkbox
+          checked={selectedIds.includes(record.id)}
+          onChange={(e) => {
+            e.nativeEvent.stopImmediatePropagation()
+            if (e.target.checked) {
+              setSelectedIds(prev => [...prev, record.id])
+            } else {
+              setSelectedIds(prev => prev.filter(id => id !== record.id))
+            }
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+    },
     {
       title: 'Title',
       dataIndex: 'title',
@@ -235,7 +300,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               <Input
                 placeholder="Search projects..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
+                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); setSelectedIds([]) }}
                 className="pl-9 h-8 rounded-full text-sm"
                 style={{ borderColor: '#525252' }}
                 allowClear
@@ -368,6 +433,38 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
         )}
       </div>
 
+      {view === 'table' && selectedIds.length > 0 && (
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-primary/30 bg-primary/5 transition-all duration-200">
+          <span className="text-sm font-medium text-foreground">{selectedIds.length} selected</span>
+          <div className="flex items-center gap-2">
+            <AntdSelect
+              size="small"
+              placeholder="Change status…"
+              className="w-[150px]"
+              loading={bulkUpdating}
+              onChange={handleBulkStatusChange}
+              value={null}
+              options={[
+                { label: 'Planning', value: 'planning' },
+                { label: 'In Progress', value: 'in_progress' },
+                { label: 'Review', value: 'review' },
+                { label: 'Completed', value: 'completed' },
+                { label: 'On Hold', value: 'on_hold' },
+                { label: 'Cancelled', value: 'cancelled' },
+              ]}
+            />
+            <AntdButton
+              danger
+              size="small"
+              loading={bulkUpdating}
+              onClick={() => setBulkDeleteOpen(true)}
+            >
+              Delete
+            </AntdButton>
+          </div>
+        </div>
+      )}
+
       {view === 'table' && (
         <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-background">
           <span className="text-sm text-muted-foreground">
@@ -384,6 +481,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             onChange={(page, size) => {
               setCurrentPage(page)
               if (size !== pageSize) setPageSize(size)
+              setSelectedIds([])
             }}
           />
         </div>
@@ -406,6 +504,15 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
         description="This will permanently delete this project and all its tasks. This cannot be undone."
         onConfirm={handleDelete}
         loading={deleting}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(open) => !open && setBulkDeleteOpen(false)}
+        title={`Delete ${selectedIds.length} projects`}
+        description={`This will permanently delete ${selectedIds.length} projects and all their tasks. This cannot be undone.`}
+        onConfirm={handleBulkDelete}
+        loading={bulkUpdating}
       />
     </div>
   )
