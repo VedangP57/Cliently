@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import type { Project, Client } from '@/types'
 import type { ColumnsType } from 'antd/es/table'
+import type { SorterResult } from 'antd/es/table/interface'
 import { PageHeader } from '@/components/shared/PageHeader'
 
 interface ProjectTableProps {
@@ -43,6 +44,8 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [deleting, setDeleting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [sortField, setSortField] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -57,7 +60,29 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     return matchesSearch && matchesStatus && matchesClient
   })
 
-  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const sorted = (() => {
+    if (!sortField || !sortOrder) return filtered
+    return [...filtered].sort((a, b) => {
+      if (sortField === 'title') {
+        return sortOrder === 'ascend'
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title)
+      }
+      if (sortField === 'deadline') {
+        const da = a.deadline ?? ''
+        const db = b.deadline ?? ''
+        return sortOrder === 'ascend' ? da.localeCompare(db) : db.localeCompare(da)
+      }
+      if (sortField === 'budget') {
+        const ba = a.budget ?? -1
+        const bb = b.budget ?? -1
+        return sortOrder === 'ascend' ? ba - bb : bb - ba
+      }
+      return 0
+    })
+  })()
+
+  const paginatedData = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   function handleFilterChange(setter: (v: string) => void) {
     return (v: string) => {
@@ -96,10 +121,13 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'title',
       key: 'title',
       align: 'center',
+      sorter: true,
+      sortOrder: sortField === 'title' ? sortOrder : null,
       render: (text, record) => (
         <Link
           href={`/dashboard/projects/${record.id}`}
           className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!"
+          onClick={(e) => e.stopPropagation()}
         >
           {text}
         </Link>
@@ -126,6 +154,8 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'deadline',
       key: 'deadline',
       align: 'center',
+      sorter: true,
+      sortOrder: sortField === 'deadline' ? sortOrder : null,
       render: (date) => <span className="text-muted-foreground">{formatDate(date)}</span>,
     },
     {
@@ -133,6 +163,8 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'budget',
       key: 'budget',
       align: 'center',
+      sorter: true,
+      sortOrder: sortField === 'budget' ? sortOrder : null,
       render: (budget) => budget ? formatCurrency(budget) : '—',
     },
     {
@@ -271,7 +303,17 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
           bordered
           size="small"
           pagination={false}
-          scroll={{ x: 800, y: 'calc(100vh - 170px)' }}
+          scroll={{ x: 800, y: 'calc(100vh - 200px)' }}
+          onRow={(record) => ({
+            className: 'group cursor-pointer',
+            onClick: () => router.push(`/dashboard/projects/${record.id}`),
+          })}
+          onChange={(_, __, sorter) => {
+            const s = sorter as SorterResult<Project>
+            setSortField(s.order ? (s.field as string) : null)
+            setSortOrder(s.order ?? null)
+            setCurrentPage(1)
+          }}
         />
       </div>
 

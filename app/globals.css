@@ -226,17 +226,101 @@
 }
 
 .ant-table-tbody .ant-table-row:last-child .ant-table-cell:last-child {
-  border-bottom-right-radius: 0.5rem;
+  border-bottom-right-radius: 0;
 }
 
 .ant-table-tbody .ant-table-row:last-child .ant-table-cell:first-child {
+  border-bottom-left-radius: 0;
+}
+
+/* Remove container left border — first-column cells take it over so it
+   follows the last row and can be rounded at the bottom-left corner */
+.clients-table .ant-table-container {
+  border-inline-start: none !important;
+}
+
+/* Separate border model so td border-radius actually works */
+.clients-table .ant-table-body table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Remove doubled borders that separate model would create */
+.clients-table .ant-table-body .ant-table-cell {
+  border-left: none !important;
+  border-top: none !important;
+}
+
+/* First-column cells own the left border */
+.clients-table .ant-table-body .ant-table-cell:first-child {
+  border-inline-start: 1px solid hsl(var(--border)) !important;
+}
+
+.clients-table .ant-table-tbody > tr:last-child > td:first-child {
+  border-bottom-left-radius: 0.5rem !important;
+}
+.clients-table .ant-table-tbody > tr:last-child > td:last-child {
+  border-bottom-right-radius: 0.5rem !important;
+}
+
+.clients-table .ant-table-body {
+  height: calc(100vh - 200px) !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+.clients-table .ant-table-body::-webkit-scrollbar {
+  display: block !important;
+  width: 5px !important;
+}
+
+.clients-table .ant-table-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.clients-table .ant-table-body::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3) !important;
+  border-radius: 9999px !important;
+}
+
+.clients-table .ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5) !important;
+}
+
+/* Last row keeps its bottom border */
+.clients-table .ant-table-tbody .ant-table-row:last-child .ant-table-cell {
+  border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+/* Pagination sits outside .ant-table so it needs its own side+bottom border
+   and rounded bottom corners to complete the table "box" appearance */
+.clients-table .ant-table-wrapper .ant-pagination {
+  margin: 0 !important;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-inline: 16px;
+  border-top: 1px solid hsl(var(--border));
+  border-inline-start: 1px solid hsl(var(--border));
+  border-inline-end: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
   border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.dark .clients-table .ant-table-wrapper .ant-pagination {
+  background-color: #1f1f1f;
 }
 
 .user-table .ant-table-wrapper,
 .user-table .ant-table,
 .user-table .ant-table-container,
 .ant-spin-container .ant-table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.clients-table .ant-table-wrapper {
   border-radius: 0.5rem;
   overflow: hidden;
 }
@@ -280,21 +364,6 @@
   padding-right: 16px !important;
 }
 
-/* Fix Ant Design Select dropdown under Tailwind v4 preflight */
-.ant-select-dropdown {
-  pointer-events: auto !important;
-  z-index: 1050 !important;
-}
-
-.ant-select-dropdown .ant-select-item {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-}
-
-.clients-status-select-dropdown {
-  z-index: 2100 !important;
-}
-
 .ant-pagination-mini .ant-pagination-item {
   border-radius: 50%;
 }
@@ -334,3 +403,20 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: hsl(222.2 84% 4.9%) !important;
   transition: background-color 5000s ease-in-out 0s !important;
 }
+
+/* Fix Ant Design Select dropdown clicks under Tailwind v4 preflight */
+.ant-select-dropdown,
+.ant-select-dropdown * {
+  pointer-events: auto !important;
+}
+
+.ant-select-dropdown .ant-select-item,
+.ant-select-dropdown .ant-select-item-option {
+  cursor: pointer !important;
+}
+
+/* Projects table — row hover highlight */
+.clients-table .ant-table-tbody .ant-table-row:hover .ant-table-cell {
+  background-color: hsl(var(--muted)) !important;
+}
+
