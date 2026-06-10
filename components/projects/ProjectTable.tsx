@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -50,15 +50,14 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [sortField, setSortField] = useState<keyof Project | null>(null)
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
-  const [view, setView] = useState<'table' | 'board'>('table')
+  const [view, setView] = useState<'table' | 'board'>(() => {
+    if (typeof window === 'undefined') return 'table'
+    const stored = localStorage.getItem('projects-view')
+    return stored === 'board' ? 'board' : 'table'
+  })
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [bulkUpdating, setBulkUpdating] = useState(false)
-
-  useEffect(() => {
-    const stored = localStorage.getItem('projects-view') as 'table' | 'board' | null
-    if (stored === 'table' || stored === 'board') setView(stored)
-  }, [])
   const { toast } = useToast()
   const router = useRouter()
 
@@ -411,7 +410,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               bordered
               size="small"
               pagination={false}
-              scroll={{ x: 800, y: 'calc(100vh - 200px)' }}
+              scroll={{ x: 800, y: 'calc(100vh - 280px)' }}
               onRow={(record) => ({
                 className: 'group cursor-pointer',
                 onClick: () => router.push(`/dashboard/projects/${record.id}`),
@@ -511,7 +510,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
 
       <ConfirmDialog
         open={bulkDeleteOpen}
-        onOpenChange={(open) => !open && setBulkDeleteOpen(false)}
+        onOpenChange={setBulkDeleteOpen}
         title={`Delete ${selectedIds.length} projects`}
         description={`This will permanently delete ${selectedIds.length} projects and all their tasks. This cannot be undone.`}
         onConfirm={handleBulkDelete}
