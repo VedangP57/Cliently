@@ -9,8 +9,7 @@ import {
   Input,
   Select as AntdSelect,
   Tooltip,
-  Typography,
-  Space
+  Pagination,
 } from 'antd'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ProjectModal } from '@/components/projects/ProjectModal'
@@ -29,8 +28,6 @@ import type { Project, Client } from '@/types'
 import type { ColumnsType } from 'antd/es/table'
 import { PageHeader } from '@/components/shared/PageHeader'
 
-const { Text } = Typography
-
 interface ProjectTableProps {
   projects: Project[]
   clients: Client[]
@@ -44,19 +41,30 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const { toast } = useToast()
   const router = useRouter()
 
+  const inProgressCount = projects.filter(p => p.status === 'in_progress').length
+  const completedCount = projects.filter(p => p.status === 'completed').length
+  const onHoldCount = projects.filter(p => p.status === 'on_hold').length
+
   const filtered = projects.filter((p) => {
-    const matchesSearch = p.title
-      .toLowerCase()
-      .includes(search.toLowerCase())
-    const matchesStatus =
-      statusFilter === 'all' || p.status === statusFilter
-    const matchesClient =
-      clientFilter === 'all' || p.client_id === clientFilter
+    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter
+    const matchesClient = clientFilter === 'all' || p.client_id === clientFilter
     return matchesSearch && matchesStatus && matchesClient
   })
+
+  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  function handleFilterChange(setter: (v: string) => void) {
+    return (v: string) => {
+      setter(v)
+      setCurrentPage(1)
+    }
+  }
 
   async function handleDelete() {
     if (!deleteId) return
@@ -167,74 +175,122 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   ]
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Projects"
-        description={`${projects.length} total projects`}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search projects..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-8 rounded-full text-sm"
-              allowClear
+    <div className="flex flex-col h-[calc(100vh-64px)] lg:h-screen -mb-20 lg:-mb-6 overflow-hidden">
+      {/* Page header — fixed height */}
+      <div className="shrink-0 px-4 py-4  border-border dark:border-white/10 bg-background">
+        <PageHeader
+          title="Projects"
+          description={`${projects.length} total projects`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-56">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search projects..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
+                className="pl-9 h-8 rounded-full text-sm"
+                style={{ borderColor: '#525252' }}
+                allowClear
+              />
+            </div>
+
+            <AntdSelect
+              className="w-[120px] h-8 select-rounded-full"
+              value={statusFilter}
+              onChange={handleFilterChange(setStatusFilter)}
+              style={{ borderColor: '#525252' }}
+              options={[
+                { label: 'All Status', value: 'all' },
+                { label: 'Planning', value: 'planning' },
+                { label: 'In Progress', value: 'in_progress' },
+                { label: 'Review', value: 'review' },
+                { label: 'Completed', value: 'completed' },
+                { label: 'On Hold', value: 'on_hold' },
+                { label: 'Cancelled', value: 'cancelled' },
+              ]}
             />
+
+            <AntdSelect
+              className="w-[140px] h-8 select-rounded-full"
+              value={clientFilter}
+              onChange={handleFilterChange(setClientFilter)}
+              style={{ borderColor: '#525252' }}
+              options={[
+                { label: 'All Clients', value: 'all' },
+                ...clients.map(c => ({ label: c.name, value: c.id }))
+              ]}
+            />
+
+            <AntdButton
+              type="primary"
+              onClick={openCreate}
+              className="h-8 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-4 text-sm text-primary-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Project
+            </AntdButton>
           </div>
+        </PageHeader>
+      </div>
 
-          <AntdSelect
-            className="w-[120px] h-8 select-rounded-full"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={[
-              { label: 'All Status', value: 'all' },
-              { label: 'Planning', value: 'planning' },
-              { label: 'In Progress', value: 'in_progress' },
-              { label: 'Review', value: 'review' },
-              { label: 'Completed', value: 'completed' },
-              { label: 'On Hold', value: 'on_hold' },
-              { label: 'Cancelled', value: 'cancelled' },
-            ]}
-          />
-
-          <AntdSelect
-            className="w-[140px] h-8 select-rounded-full"
-            value={clientFilter}
-            onChange={setClientFilter}
-            options={[
-              { label: 'All Clients', value: 'all' },
-              ...clients.map(c => ({ label: c.name, value: c.id }))
-            ]}
-          />
-
-          <AntdButton
-            type="primary"
-            onClick={openCreate}
-            className="h-8 rounded-full bg-primary hover:bg-primary/90! border-none flex items-center gap-2 px-4 text-sm text-primary-foreground"
+      {/* Stat cards */}
+      <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3 px-5 pt-4 pb-2">
+        {[
+          { label: 'Total Projects', count: projects.length, dot: 'bg-primary', value: 'all' },
+          { label: 'In Progress', count: inProgressCount, dot: 'bg-blue-500', value: 'in_progress' },
+          { label: 'Completed', count: completedCount, dot: 'bg-green-500', value: 'completed' },
+          { label: 'On Hold', count: onHoldCount, dot: 'bg-orange-400', value: 'on_hold' },
+        ].map(({ label, count, dot, value }) => (
+          <button
+            key={value}
+            onClick={() => handleFilterChange(setStatusFilter)(value)}
+            className={[
+              'flex flex-col gap-1 p-4 rounded-lg border bg-card text-left transition-all',
+              statusFilter === value
+                ? 'border-l-4 border-primary bg-primary/5'
+                : 'hover:bg-muted/50',
+            ].join(' ')}
           >
-            <Plus className="h-3.5 w-3.5" />
-            New Project
-          </AntdButton>
-        </div>
-      </PageHeader>
+            <span className="text-2xl font-bold">{count}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${dot}`} />
+              <span className="text-xs text-muted-foreground">{label}</span>
+            </div>
+          </button>
+        ))}
+      </div>
 
-      <div className="user-table">
+      {/* Table — fills remaining space */}
+      <div className="flex-1 min-h-0 user-table px-5 pt-2 clients-table">
         <Table<Project>
           columns={columns}
-          dataSource={filtered}
+          dataSource={paginatedData}
           rowKey="id"
           bordered
           size="small"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
-            placement: ['bottomCenter'],
-            className: 'ant-pagination-mini',
-            hideOnSinglePage: true,
+          pagination={false}
+          scroll={{ x: 800, y: 'calc(100vh - 170px)' }}
+        />
+      </div>
+
+      {/* Pagination — always stuck at bottom */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-2 border-border bg-background">
+        <span className="text-sm text-muted-foreground">
+          {filtered.length === 0
+            ? '0 of 0'
+            : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filtered.length)} of ${filtered.length}`}
+        </span>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={filtered.length}
+          showSizeChanger
+          pageSizeOptions={['10', '20', '50', '100']}
+          onChange={(page, size) => {
+            setCurrentPage(page)
+            if (size !== pageSize) setPageSize(size)
           }}
-          scroll={{ x: 800 }}
         />
       </div>
 
