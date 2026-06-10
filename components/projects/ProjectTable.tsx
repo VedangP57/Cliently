@@ -245,6 +245,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
           <button
             key={value}
             onClick={() => handleFilterChange(setStatusFilter)(value)}
+            aria-pressed={statusFilter === value}
             className={[
               'flex flex-col gap-1 p-4 rounded-lg border bg-card text-left transition-all',
               statusFilter === value
