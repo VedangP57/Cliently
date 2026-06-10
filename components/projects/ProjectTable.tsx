@@ -44,7 +44,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [deleting, setDeleting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [sortField, setSortField] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<keyof Project | null>(null)
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
   const { toast } = useToast()
   const router = useRouter()
@@ -69,13 +69,19 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
           : b.title.localeCompare(a.title)
       }
       if (sortField === 'deadline') {
-        const da = a.deadline ?? ''
-        const db = b.deadline ?? ''
+        const da = a.deadline ?? null
+        const db = b.deadline ?? null
+        if (!da && !db) return 0
+        if (!da) return sortOrder === 'ascend' ? 1 : -1
+        if (!db) return sortOrder === 'ascend' ? -1 : 1
         return sortOrder === 'ascend' ? da.localeCompare(db) : db.localeCompare(da)
       }
       if (sortField === 'budget') {
-        const ba = a.budget ?? -1
-        const bb = b.budget ?? -1
+        const ba = a.budget ?? null
+        const bb = b.budget ?? null
+        if (ba === null && bb === null) return 0
+        if (ba === null) return sortOrder === 'ascend' ? 1 : -1
+        if (bb === null) return sortOrder === 'ascend' ? -1 : 1
         return sortOrder === 'ascend' ? ba - bb : bb - ba
       }
       return 0
@@ -309,9 +315,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             onClick: () => router.push(`/dashboard/projects/${record.id}`),
           })}
           onChange={(_, __, sorter) => {
-            const s = sorter as SorterResult<Project>
-            setSortField(s.order ? (s.field as string) : null)
-            setSortOrder(s.order ?? null)
+            const s = Array.isArray(sorter) ? sorter[0] : sorter as SorterResult<Project>
+            setSortField(s?.order ? (s.field as keyof Project) : null)
+            setSortOrder(s?.order ?? null)
             setCurrentPage(1)
           }}
         />
