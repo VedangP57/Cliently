@@ -32,12 +32,12 @@ export function ProjectBoardView({ projects, clients, onEdit, onDelete }: Projec
       {STATUS_COLUMNS.map(({ key, label }) => {
         const colProjects = projects.filter(p => p.status === key)
         return (
-          <div key={key} className="min-w-[260px] max-w-[260px] flex flex-col gap-2">
+          <div key={key} className="min-w-[260px] max-w-[260px] flex flex-col gap-2" role="group" aria-label={label}>
             <div className="flex items-center gap-2 px-1 shrink-0">
               <StatusBadge status={key} />
               <span className="text-xs text-muted-foreground font-medium">{colProjects.length}</span>
             </div>
-            <div className="flex flex-col gap-2 overflow-y-auto">
+            <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto">
               {colProjects.length === 0 && (
                 <div className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border rounded-lg">
                   No projects

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -49,10 +49,12 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [sortField, setSortField] = useState<keyof Project | null>(null)
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
-  const [view, setView] = useState<'table' | 'board'>(() => {
-    if (typeof window === 'undefined') return 'table'
-    return (localStorage.getItem('projects-view') as 'table' | 'board') ?? 'table'
-  })
+  const [view, setView] = useState<'table' | 'board'>('table')
+
+  useEffect(() => {
+    const stored = localStorage.getItem('projects-view') as 'table' | 'board' | null
+    if (stored === 'table' || stored === 'board') setView(stored)
+  }, [])
   const { toast } = useToast()
   const router = useRouter()
 
