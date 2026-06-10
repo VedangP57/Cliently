@@ -23,11 +23,14 @@ import {
   SquarePen,
   Trash,
   ExternalLink,
+  LayoutList,
+  LayoutGrid,
 } from 'lucide-react'
 import type { Project, Client } from '@/types'
 import type { ColumnsType } from 'antd/es/table'
 import type { SorterResult } from 'antd/es/table/interface'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { ProjectBoardView } from '@/components/projects/ProjectBoardView'
 
 interface ProjectTableProps {
   projects: Project[]
@@ -46,6 +49,10 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [sortField, setSortField] = useState<keyof Project | null>(null)
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
+  const [view, setView] = useState<'table' | 'board'>(() => {
+    if (typeof window === 'undefined') return 'table'
+    return (localStorage.getItem('projects-view') as 'table' | 'board') ?? 'table'
+  })
   const { toast } = useToast()
   const router = useRouter()
 
@@ -260,6 +267,29 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               ]}
             />
 
+            <div className="flex items-center border border-border rounded-lg overflow-hidden">
+              <button
+                onClick={() => { setView('table'); localStorage.setItem('projects-view', 'table') }}
+                className={[
+                  'flex items-center justify-center h-8 w-8 transition-colors',
+                  view === 'table' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+                ].join(' ')}
+                title="Table view"
+              >
+                <LayoutList className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => { setView('board'); localStorage.setItem('projects-view', 'board') }}
+                className={[
+                  'flex items-center justify-center h-8 w-8 transition-colors',
+                  view === 'board' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+                ].join(' ')}
+                title="Board view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+            </div>
+
             <AntdButton
               type="primary"
               onClick={openCreate}
@@ -300,48 +330,62 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
         ))}
       </div>
 
-      {/* Table — fills remaining space */}
-      <div className="flex-1 min-h-0 user-table px-5 pt-2 clients-table">
-        <Table<Project>
-          columns={columns}
-          dataSource={paginatedData}
-          rowKey="id"
-          bordered
-          size="small"
-          pagination={false}
-          scroll={{ x: 800, y: 'calc(100vh - 200px)' }}
-          onRow={(record) => ({
-            className: 'group cursor-pointer',
-            onClick: () => router.push(`/dashboard/projects/${record.id}`),
-          })}
-          onChange={(_, __, sorter) => {
-            const s = Array.isArray(sorter) ? sorter[0] : sorter as SorterResult<Project>
-            setSortField(s?.order ? (s.field as keyof Project) : null)
-            setSortOrder(s?.order ?? null)
-            setCurrentPage(1)
-          }}
-        />
+      {/* Table or Board — fills remaining space */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {view === 'table' ? (
+          <div className="h-full user-table px-5 pt-2 clients-table">
+            <Table<Project>
+              columns={columns}
+              dataSource={paginatedData}
+              rowKey="id"
+              bordered
+              size="small"
+              pagination={false}
+              scroll={{ x: 800, y: 'calc(100vh - 200px)' }}
+              onRow={(record) => ({
+                className: 'group cursor-pointer',
+                onClick: () => router.push(`/dashboard/projects/${record.id}`),
+              })}
+              onChange={(_, __, sorter) => {
+                const s = Array.isArray(sorter) ? sorter[0] : sorter as SorterResult<Project>
+                setSortField(s?.order ? (s.field as keyof Project) : null)
+                setSortOrder(s?.order ?? null)
+                setCurrentPage(1)
+              }}
+            />
+          </div>
+        ) : (
+          <div className="h-full pt-2">
+            <ProjectBoardView
+              projects={sorted}
+              clients={clients}
+              onEdit={openEdit}
+              onDelete={(id) => setDeleteId(id)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Pagination — always stuck at bottom */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-2 border-border bg-background">
-        <span className="text-sm text-muted-foreground">
-          {filtered.length === 0
-            ? '0 of 0'
-            : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filtered.length)} of ${filtered.length}`}
-        </span>
-        <Pagination
-          current={currentPage}
-          pageSize={pageSize}
-          total={filtered.length}
-          showSizeChanger
-          pageSizeOptions={['10', '20', '50', '100']}
-          onChange={(page, size) => {
-            setCurrentPage(page)
-            if (size !== pageSize) setPageSize(size)
-          }}
-        />
-      </div>
+      {view === 'table' && (
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-background">
+          <span className="text-sm text-muted-foreground">
+            {filtered.length === 0
+              ? '0 of 0'
+              : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filtered.length)} of ${filtered.length}`}
+          </span>
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={filtered.length}
+            showSizeChanger
+            pageSizeOptions={['10', '20', '50', '100']}
+            onChange={(page, size) => {
+              setCurrentPage(page)
+              if (size !== pageSize) setPageSize(size)
+            }}
+          />
+        </div>
+      )}
 
       <ProjectModal
         open={modalOpen}
