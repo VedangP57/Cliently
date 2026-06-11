@@ -49,6 +49,8 @@ const PROJECT_STATUS_OPTIONS = [
   { label: 'Cancelled', value: 'cancelled' },
 ]
 
+const TABLE_DENSITY_THEME = { components: { Table: { cellPaddingBlockSM: 2 } } } as const
+
 export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -495,7 +497,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             className={`h-full user-table clients-table table-fill${paginatedData.length >= 10 ? ' table-stretch' : ''}`}
             style={{ '--table-body-h': `${tableScrollY}px` } as React.CSSProperties}
           >
-            <ConfigProvider theme={{ components: { Table: { cellPaddingBlockSM: 2 } } }}>
+            <ConfigProvider theme={TABLE_DENSITY_THEME}>
               <Table<Project>
                 columns={columns}
                 dataSource={paginatedData}
