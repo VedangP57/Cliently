@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
+  App,
   Table,
   Button as AntdButton,
   Input,
@@ -12,12 +13,12 @@ import {
   Pagination,
   Checkbox,
 } from 'antd'
-import { StatusBadge } from '@/components/shared/StatusBadge'
+import { NoiseTexture } from '@/components/ui/noise-texture'
 import { ProjectModal } from '@/components/projects/ProjectModal'
+import { ProjectStatusSelect } from '@/components/projects/ProjectStatusSelect'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { deleteProjectAction, bulkUpdateStatusAction, bulkDeleteProjectsAction } from '@/lib/actions/projects'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { useToast } from '@/hooks/use-toast'
 import {
   Plus,
   Search,
@@ -38,6 +39,15 @@ interface ProjectTableProps {
   clients: Client[]
 }
 
+const PROJECT_STATUS_OPTIONS = [
+  { label: 'Planning', value: 'planning' },
+  { label: 'In Progress', value: 'in_progress' },
+  { label: 'Review', value: 'review' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'On Hold', value: 'on_hold' },
+  { label: 'Cancelled', value: 'cancelled' },
+]
+
 export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -50,20 +60,56 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [sortField, setSortField] = useState<keyof Project | null>(null)
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(null)
-  const [view, setView] = useState<'table' | 'board'>(() => {
-    if (typeof window === 'undefined') return 'table'
+  const [view, setView] = useState<'table' | 'board'>('table')
+
+  useEffect(() => {
     const stored = localStorage.getItem('projects-view')
-    return stored === 'board' ? 'board' : 'table'
-  })
+    if (stored === 'table' || stored === 'board') setView(stored)
+  }, [])
+
+  const [isDark, setIsDark] = useState(false)
+  useEffect(() => {
+    const root = document.documentElement
+    const checkDark = () => setIsDark(root.classList.contains('dark'))
+    checkDark()
+    const observer = new MutationObserver(checkDark)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [bulkUpdating, setBulkUpdating] = useState(false)
-  const { toast } = useToast()
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
+  const tableWrapperRef = useRef<HTMLDivElement>(null)
+  const [tableScrollY, setTableScrollY] = useState(400)
+  const { notification } = App.useApp()
   const router = useRouter()
 
+  useLayoutEffect(() => {
+    if (view !== 'table') return
+
+    const el = tableWrapperRef.current
+    if (!el) return
+
+    const updateScrollHeight = () => {
+      const header = el.querySelector('.ant-table-header') as HTMLElement | null
+      const headerHeight = header?.offsetHeight ?? 39
+      const bodyHeight = el.clientHeight - headerHeight
+      if (bodyHeight > 0) setTableScrollY(bodyHeight)
+    }
+
+    updateScrollHeight()
+    const observer = new ResizeObserver(updateScrollHeight)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [view, selectedIds.length, pageSize, currentPage])
+
+  const planningCount = projects.filter(p => p.status === 'planning').length
   const inProgressCount = projects.filter(p => p.status === 'in_progress').length
+  const reviewCount = projects.filter(p => p.status === 'review').length
   const completedCount = projects.filter(p => p.status === 'completed').length
   const onHoldCount = projects.filter(p => p.status === 'on_hold').length
+  const cancelledCount = projects.filter(p => p.status === 'cancelled').length
 
   const filtered = projects.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase())
@@ -117,9 +163,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     setDeleting(false)
     setDeleteId(null)
     if (result.error) {
-      toast({ title: 'Error', description: result.error, variant: 'destructive' })
+      notification.error({ title: 'Error', description: result.error })
     } else {
-      toast({ title: 'Project deleted' })
+      notification.success({ title: 'Project deleted' })
       router.refresh()
     }
   }
@@ -134,14 +180,26 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     setModalOpen(true)
   }
 
+  async function handleStatusChange(projectId: string, status: string) {
+    setUpdatingStatusId(projectId)
+    const result = await bulkUpdateStatusAction([projectId], status)
+    setUpdatingStatusId(null)
+    if (result.error) {
+      notification.error({ title: 'Error', description: result.error })
+    } else {
+      notification.success({ title: 'Status updated' })
+      router.refresh()
+    }
+  }
+
   async function handleBulkStatusChange(status: string) {
     setBulkUpdating(true)
     const result = await bulkUpdateStatusAction(selectedIds, status)
     setBulkUpdating(false)
     if (result.error) {
-      toast({ title: 'Error', description: result.error, variant: 'destructive' })
+      notification.error({ title: 'Error', description: result.error })
     } else {
-      toast({ title: `${selectedIds.length} projects updated` })
+      notification.success({ title: `${selectedIds.length} projects updated` })
       setSelectedIds([])
       router.refresh()
     }
@@ -155,9 +213,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     setBulkDeleteOpen(false)
     setSelectedIds([])
     if (result.error) {
-      toast({ title: 'Error', description: result.error, variant: 'destructive' })
+      notification.error({ title: 'Error', description: result.error })
     } else {
-      toast({ title: `${count} projects deleted` })
+      notification.success({ title: `${count} projects deleted` })
       router.refresh()
     }
   }
@@ -199,6 +257,17 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       ),
     },
     {
+      title: 'No.',
+      key: 'no',
+      width: 56,
+      align: 'center',
+      render: (_: unknown, __: Project, index: number) => (
+        <span className="text-muted-foreground tabular-nums">
+          {(currentPage - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
+    {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
@@ -208,7 +277,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       render: (text, record) => (
         <Link
           href={`/dashboard/projects/${record.id}`}
-          className="font-medium hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]!"
+          className="project-title-link font-medium text-[#5b5fc7]! dark:text-[#a5a3e0]! hover:text-[#4f52b2]! dark:hover:text-[#b8b6e8]!"
           onClick={(e) => e.stopPropagation()}
         >
           {text}
@@ -219,6 +288,11 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       title: 'Client',
       key: 'client',
       align: 'center',
+      filters: clients.map(c => ({ text: c.name, value: c.id })),
+      filterSearch: true,
+      filterMultiple: false,
+      filteredValue: clientFilter !== 'all' ? [clientFilter] : null,
+      onFilter: () => true,
       render: (_, record) => {
         const client = clients.find((c) => c.id === record.client_id)
         return <span className="text-muted-foreground">{client?.name ?? '—'}</span>
@@ -229,7 +303,16 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'status',
       key: 'status',
       align: 'center',
-      render: (status) => <StatusBadge status={status} />,
+      width: 150,
+      render: (status: Project['status'], record) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ProjectStatusSelect
+            status={status}
+            loading={updatingStatusId === record.id}
+            onChange={(value) => handleStatusChange(record.id, value)}
+          />
+        </div>
+      ),
     },
     {
       title: 'Deadline',
@@ -255,12 +338,12 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       width: 140,
       align: 'center',
       render: (_, record) => (
-        <div className="flex items-center justify-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
+        <div className="flex items-center justify-center gap-1">
           <Tooltip title="View">
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-blue-500! hover:text-blue-600! hover:bg-transparent"
+              className="flex items-center justify-center h-8 w-8 rounded-sm text-muted-foreground! dark:text-white/50! hover:text-[#5b5fc7]! dark:hover:text-[#a5a3e0]! hover:bg-[#5b5fc7]/10! dark:hover:bg-[#5b5fc7]/20! transition-colors"
               icon={<ExternalLink className="h-3.5 w-3.5" />}
               onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/projects/${record.id}`) }}
             />
@@ -269,7 +352,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-amber-500! hover:text-amber-600! hover:bg-transparent"
+              className="flex items-center justify-center h-8 w-8 rounded-sm text-muted-foreground! dark:text-white/50! hover:text-amber-600! dark:hover:text-amber-400! hover:bg-amber-500/10! dark:hover:bg-amber-500/15! transition-colors"
               icon={<SquarePen className="h-3.5 w-3.5" />}
               onClick={(e) => { e.stopPropagation(); openEdit(record) }}
             />
@@ -278,7 +361,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             <AntdButton
               type="text"
               size="small"
-              className="flex items-center justify-center h-8 w-8 rounded-lg text-red-500! hover:text-red-600! hover:bg-transparent"
+              className="flex items-center justify-center h-8 w-8 rounded-sm text-muted-foreground! dark:text-white/50! hover:text-red-600! dark:hover:text-red-400! hover:bg-red-500/10! dark:hover:bg-red-500/15! transition-colors"
               icon={<Trash className="h-3.5 w-3.5" />}
               onClick={(e) => { e.stopPropagation(); setDeleteId(record.id) }}
             />
@@ -289,9 +372,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
   ]
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] lg:h-screen -mb-20 lg:-mb-6 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-64px)] lg:h-screen -mb-20 lg:-mb-6 overflow-hidden bg-[#f0f0f0] dark:bg-[#0a0a0a]">
       {/* Page header — fixed height */}
-      <div className="shrink-0 px-4 py-4  border-border dark:border-white/10 bg-background">
+      <div className="shrink-0 px-5 pb-2 pt-3 dark:border-white/10 ">
         <PageHeader
           title="Projects"
           description={`${projects.length} total projects`}
@@ -304,24 +387,17 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); setSelectedIds([]) }}
                 className="pl-9 h-8 rounded-full text-sm"
-                style={{ borderColor: '#525252' }}
                 allowClear
               />
             </div>
 
             <AntdSelect
-              className="w-[120px] h-8 select-rounded-full"
+              className="w-[130px]"
               value={statusFilter}
               onChange={handleFilterChange(setStatusFilter)}
-              style={{ borderColor: '#525252' }}
               options={[
                 { label: 'All Status', value: 'all' },
-                { label: 'Planning', value: 'planning' },
-                { label: 'In Progress', value: 'in_progress' },
-                { label: 'Review', value: 'review' },
-                { label: 'Completed', value: 'completed' },
-                { label: 'On Hold', value: 'on_hold' },
-                { label: 'Cancelled', value: 'cancelled' },
+                ...PROJECT_STATUS_OPTIONS,
               ]}
             />
 
@@ -329,19 +405,20 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               className="w-[140px] h-8 select-rounded-full"
               value={clientFilter}
               onChange={handleFilterChange(setClientFilter)}
-              style={{ borderColor: '#525252' }}
               options={[
                 { label: 'All Clients', value: 'all' },
                 ...clients.map(c => ({ label: c.name, value: c.id }))
               ]}
             />
 
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center border border-[#e0e0e0] dark:border-border rounded-lg overflow-hidden bg-white/80 dark:bg-transparent shadow-sm">
               <button
                 onClick={() => { setView('table'); localStorage.setItem('projects-view', 'table') }}
                 className={[
                   'flex items-center justify-center h-8 w-8 transition-colors',
-                  view === 'table' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+                  view === 'table'
+                    ? 'bg-white text-[#242424] shadow-sm dark:bg-muted dark:text-foreground dark:shadow-none'
+                    : 'text-[#9e9e9e] hover:text-[#616161] hover:bg-white/60 dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-transparent',
                 ].join(' ')}
                 title="Table view"
               >
@@ -351,7 +428,9 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
                 onClick={() => { setView('board'); localStorage.setItem('projects-view', 'board') }}
                 className={[
                   'flex items-center justify-center h-8 w-8 transition-colors',
-                  view === 'board' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+                  view === 'board'
+                    ? 'bg-white text-[#242424] shadow-sm dark:bg-muted dark:text-foreground dark:shadow-none'
+                    : 'text-[#9e9e9e] hover:text-[#616161] hover:bg-white/60 dark:text-muted-foreground dark:hover:text-foreground dark:hover:bg-transparent',
                 ].join(' ')}
                 title="Board view"
               >
@@ -372,37 +451,49 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       </div>
 
       {/* Stat cards */}
-      <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3 px-5 pt-4 pb-2">
+      <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-2 px-5 pb-2">
         {[
-          { label: 'Total Projects', count: projects.length, dot: 'bg-primary', value: 'all' },
-          { label: 'In Progress', count: inProgressCount, dot: 'bg-blue-500', value: 'in_progress' },
-          { label: 'Completed', count: completedCount, dot: 'bg-green-500', value: 'completed' },
-          { label: 'On Hold', count: onHoldCount, dot: 'bg-orange-400', value: 'on_hold' },
-        ].map(({ label, count, dot, value }) => (
+          { label: 'Planning',    count: planningCount,   value: 'planning',    hex: '#5b5fc7', bg: '#ecebfb' },
+          { label: 'In Progress', count: inProgressCount, value: 'in_progress', hex: '#0f6cbd', bg: '#eaf2fb' },
+          { label: 'Review',      count: reviewCount,      value: 'review',      hex: '#835b00', bg: '#fbf3d6' },
+          { label: 'Completed',   count: completedCount,   value: 'completed',   hex: '#0e700e', bg: '#e3f3e4' },
+          { label: 'On Hold',     count: onHoldCount,      value: 'on_hold',     hex: '#9a5b00', bg: '#fdeacb' },
+          { label: 'Cancelled',   count: cancelledCount,   value: 'cancelled',   hex: '#bc2f32', bg: '#fbe1e1' },
+        ].map(({ label, count, value, hex, bg }) => (
           <button
             key={value}
-            onClick={() => handleFilterChange(setStatusFilter)(value)}
+            onClick={() => handleFilterChange(setStatusFilter)(statusFilter === value ? 'all' : value)}
             aria-pressed={statusFilter === value}
-            className={[
-              'flex flex-col gap-1 p-4 rounded-lg border bg-card text-left transition-all',
-              statusFilter === value
-                ? 'border-l-4 border-primary bg-primary/5'
-                : 'hover:bg-muted/50',
-            ].join(' ')}
+            className="relative overflow-hidden flex items-center justify-between gap-2 px-3 py-1.5 rounded-md border border-[#e6e6e6] dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-left transition-all cursor-pointer shadow-sm hover:border-[#c7c7c7] dark:hover:border-white/20"
+            style={statusFilter === value
+              ? {
+                  borderColor: hex,
+                  borderBottomWidth: '2px',
+                  backgroundColor: isDark
+                    ? `color-mix(in srgb, ${hex} 18%, #1a1a1a)`
+                    : bg,
+                }
+              : undefined}
           >
-            <span className="text-2xl font-bold">{count}</span>
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${dot}`} />
-              <span className="text-xs text-muted-foreground">{label}</span>
+            <NoiseTexture id={`stat-${value}`} className="absolute inset-0 z-0 stat-card-noise" baseFrequency={0.65} />
+            <div className="relative z-[1] flex items-center gap-1.5 min-w-0">
+              <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: hex }} />
+              <span className="text-xs text-muted-foreground truncate">{label}</span>
             </div>
+            <span className="relative z-[1] text-sm font-semibold tabular-nums" style={statusFilter === value ? { color: hex } : undefined}>{count}</span>
           </button>
         ))}
       </div>
 
       {/* Table or Board — fills remaining space */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden px-5 pb-2">
+        <div className="h-full flex flex-col bg-white dark:bg-[#1a1a1a] rounded-lg border border-[#e6e6e6] dark:border-white/10 shadow-sm overflow-hidden">
         {view === 'table' ? (
-          <div className="h-full user-table px-5 pt-2 clients-table">
+          <div
+            ref={tableWrapperRef}
+            className={`h-full user-table clients-table table-fill${paginatedData.length >= 10 ? ' table-stretch' : ''}`}
+            style={{ '--table-body-h': `${tableScrollY}px` } as React.CSSProperties}
+          >
             <Table<Project>
               columns={columns}
               dataSource={paginatedData}
@@ -410,12 +501,12 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               bordered
               size="small"
               pagination={false}
-              scroll={{ x: 800, y: 'calc(100vh - 280px)' }}
-              onRow={(record) => ({
-                className: 'group cursor-pointer',
-                onClick: () => router.push(`/dashboard/projects/${record.id}`),
-              })}
-              onChange={(_, __, sorter) => {
+              scroll={{ x: 800, y: tableScrollY }}
+              onChange={(_, filters, sorter) => {
+                const clientVal = filters['client']
+                handleFilterChange(setClientFilter)(
+                  clientVal && clientVal.length > 0 ? String(clientVal[0]) : 'all'
+                )
                 const s = Array.isArray(sorter) ? sorter[0] : sorter as SorterResult<Project>
                 setSortField(s?.order ? (s.field as keyof Project) : null)
                 setSortOrder(s?.order ?? null)
@@ -433,10 +524,11 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             />
           </div>
         )}
+        </div>
       </div>
 
       {view === 'table' && selectedIds.length > 0 && (
-        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-primary/30 bg-primary/5 transition-all duration-200">
+        <div className="shrink-0 flex items-center justify-between px-5 py-2 border-t border-b border-primary/30 bg-primary/5 transition-all duration-200">
           <span className="text-sm font-medium text-foreground">{selectedIds.length} selected</span>
           <div className="flex items-center gap-2">
             <AntdSelect
@@ -446,14 +538,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               loading={bulkUpdating}
               onChange={handleBulkStatusChange}
               value={null}
-              options={[
-                { label: 'Planning', value: 'planning' },
-                { label: 'In Progress', value: 'in_progress' },
-                { label: 'Review', value: 'review' },
-                { label: 'Completed', value: 'completed' },
-                { label: 'On Hold', value: 'on_hold' },
-                { label: 'Cancelled', value: 'cancelled' },
-              ]}
+              options={PROJECT_STATUS_OPTIONS}
             />
             <AntdButton
               danger
@@ -468,21 +553,27 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       )}
 
       {view === 'table' && (
-        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-background">
+        <div className="shrink-0 flex items-center justify-between px-5 pt-2 pb-4 border-border">
           <span className="text-sm text-muted-foreground">
             {filtered.length === 0
               ? '0 of 0'
               : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filtered.length)} of ${filtered.length}`}
           </span>
           <Pagination
+            size="small"
+            className="projects-pagination"
             current={currentPage}
             pageSize={pageSize}
             total={filtered.length}
             showSizeChanger
-            pageSizeOptions={['10', '20', '50', '100']}
-            onChange={(page, size) => {
+            pageSizeOptions={[10, 20, 50, 100]}
+            onChange={(page) => {
               setCurrentPage(page)
-              if (size !== pageSize) setPageSize(size)
+              setSelectedIds([])
+            }}
+            onShowSizeChange={(_, size) => {
+              setPageSize(size)
+              setCurrentPage(1)
               setSelectedIds([])
             }}
           />
