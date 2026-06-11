@@ -12,6 +12,7 @@ import {
   Tooltip,
   Pagination,
   Checkbox,
+  ConfigProvider,
 } from 'antd'
 import { NoiseTexture } from '@/components/ui/noise-texture'
 import { ProjectModal } from '@/components/projects/ProjectModal'
@@ -494,25 +495,27 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
             className={`h-full user-table clients-table table-fill${paginatedData.length >= 10 ? ' table-stretch' : ''}`}
             style={{ '--table-body-h': `${tableScrollY}px` } as React.CSSProperties}
           >
-            <Table<Project>
-              columns={columns}
-              dataSource={paginatedData}
-              rowKey="id"
-              bordered
-              size="small"
-              pagination={false}
-              scroll={{ x: 800, y: tableScrollY }}
-              onChange={(_, filters, sorter) => {
-                const clientVal = filters['client']
-                handleFilterChange(setClientFilter)(
-                  clientVal && clientVal.length > 0 ? String(clientVal[0]) : 'all'
-                )
-                const s = Array.isArray(sorter) ? sorter[0] : sorter as SorterResult<Project>
-                setSortField(s?.order ? (s.field as keyof Project) : null)
-                setSortOrder(s?.order ?? null)
-                setCurrentPage(1)
-              }}
-            />
+            <ConfigProvider theme={{ components: { Table: { cellPaddingBlockSM: 2 } } }}>
+              <Table<Project>
+                columns={columns}
+                dataSource={paginatedData}
+                rowKey="id"
+                bordered
+                size="small"
+                pagination={false}
+                scroll={{ x: 800, y: tableScrollY }}
+                onChange={(_, filters, sorter) => {
+                  const clientVal = filters['client']
+                  handleFilterChange(setClientFilter)(
+                    clientVal && clientVal.length > 0 ? String(clientVal[0]) : 'all'
+                  )
+                  const s = Array.isArray(sorter) ? sorter[0] : sorter as SorterResult<Project>
+                  setSortField(s?.order ? (s.field as keyof Project) : null)
+                  setSortOrder(s?.order ?? null)
+                  setCurrentPage(1)
+                }}
+              />
+            </ConfigProvider>
           </div>
         ) : (
           <div className="h-full pt-2">
