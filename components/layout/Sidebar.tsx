@@ -19,42 +19,66 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LogOut,
-  User,
+  Sparkles,
+  type LucideIcon,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Avatar, Button, Dropdown, Tooltip } from 'antd'
+import type { MenuProps } from 'antd'
 import { logoutAction } from '@/lib/actions/auth'
 import { getInitials } from '@/lib/utils'
+import { NoiseTexture } from '@/components/ui/noise-texture'
 
-const dashboardNavItems = [
-  { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Clients', href: '/dashboard/clients', icon: Users },
-  { label: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { label: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-  { label: 'Proposals', href: '/dashboard/proposals', icon: FileText },
-  { label: 'Contracts', href: '/dashboard/contracts', icon: FileSignature },
-  { label: 'Time', href: '/dashboard/time', icon: Clock },
-  { label: 'Expenses', href: '/dashboard/expenses', icon: Receipt },
-  { label: 'Invoices', href: '/dashboard/invoices', icon: FileSpreadsheet },
-  { label: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
-  { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+type NavItem = { label: string; href: string; icon: LucideIcon }
+type NavGroup = { label: string; items: NavItem[] }
+
+const dashboardNavGroups: NavGroup[] = [
+  {
+    label: 'Workspace',
+    items: [{ label: 'Overview', href: '/dashboard', icon: LayoutDashboard }],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { label: 'Clients', href: '/dashboard/clients', icon: Users },
+      { label: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
+      { label: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
+    ],
+  },
+  {
+    label: 'Documents',
+    items: [
+      { label: 'Proposals', href: '/dashboard/proposals', icon: FileText },
+      { label: 'Contracts', href: '/dashboard/contracts', icon: FileSignature },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { label: 'Time', href: '/dashboard/time', icon: Clock },
+      { label: 'Expenses', href: '/dashboard/expenses', icon: Receipt },
+      { label: 'Invoices', href: '/dashboard/invoices', icon: FileSpreadsheet },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { label: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
+      { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+    ],
+  },
 ]
 
-const adminNavItems = [
-  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+const adminNavGroups: NavGroup[] = [
+  {
+    label: 'Administration',
+    items: [
+      { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+      { label: 'Users', href: '/admin/users', icon: Users },
+      { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    ],
+  },
 ]
 
 interface SidebarProps {
@@ -66,11 +90,17 @@ interface SidebarProps {
   variant?: 'dashboard' | 'admin'
 }
 
+function isNavActive(pathname: string, href: string) {
+  return href === '/dashboard' || href === '/admin'
+    ? pathname === href
+    : pathname.startsWith(href)
+}
+
 export function Sidebar({ user, variant = 'dashboard' }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const navItems = variant === 'admin' ? adminNavItems : dashboardNavItems
+  const navGroups = variant === 'admin' ? adminNavGroups : dashboardNavGroups
   const homeHref = variant === 'admin' ? '/admin' : '/dashboard'
   const settingsHref = variant === 'admin' ? '/admin/settings' : '/dashboard/settings'
 
@@ -78,118 +108,220 @@ export function Sidebar({ user, variant = 'dashboard' }: SidebarProps) {
     setMounted(true)
   }, [])
 
+  const menuItems: MenuProps['items'] = [
+    {
+      key: 'settings',
+      icon: <Settings className="h-4 w-4" />,
+      label: <Link href={settingsHref}>Settings</Link>,
+    },
+    { type: 'divider' },
+    {
+      key: 'logout',
+      icon: <LogOut className="h-4 w-4" />,
+      label: 'Log out',
+      onClick: async () => { await logoutAction() },
+    },
+    { type: 'divider' },
+    {
+      key: 'email',
+      label: user.email,
+      disabled: true,
+    },
+  ]
+
+  function renderNavLink(item: NavItem) {
+    const isActive = mounted && isNavActive(pathname, item.href)
+    const Icon = item.icon
+
+    const link = (
+      <Link
+        href={item.href}
+        suppressHydrationWarning
+        className={cn(
+          'sidebar-nav-link group relative flex items-center gap-3 rounded-lg py-2 text-[13px] transition-all duration-200 cursor-pointer no-underline outline-none focus-visible:ring-2 focus-visible:ring-[#5e5cc5]/30',
+          isActive
+            ? 'sidebar-active bg-gradient-to-r from-[#5e5cc5]/[0.14] to-[#5e5cc5]/[0.03] px-3 font-semibold dark:from-[#5e5cc5]/[0.22] dark:to-[#5e5cc5]/[0.05]'
+            : 'px-3 font-normal hover:bg-[#f5f5f5] dark:hover:bg-white/[0.05]',
+          collapsed && 'justify-center px-2.5',
+          collapsed && isActive && 'bg-[#5e5cc5]/[0.15] dark:bg-[#5e5cc5]/30'
+        )}
+        title={collapsed ? item.label : undefined}
+      >
+        <span
+          className={cn(
+            'flex shrink-0 items-center justify-center rounded-md transition-all duration-200',
+            isActive
+              ? 'h-7 w-7 bg-gradient-to-br from-[#7473d4] to-[#4543aa] text-white shadow-[0_2px_8px_rgba(94,92,197,0.5)] dark:from-[#7c7adb] dark:to-[#4a48b0] dark:shadow-[0_2px_12px_rgba(94,92,197,0.6)]'
+              : 'h-[18px] w-[18px] text-[#737373] group-hover:text-[#404040] dark:text-white/50 dark:group-hover:text-white/80'
+          )}
+        >
+          <Icon className={cn(isActive ? 'h-4 w-4' : 'h-[18px] w-[18px]')} strokeWidth={isActive ? 2.25 : 1.75} />
+        </span>
+        {!collapsed && (
+          <span className={cn('sidebar-nav-label truncate', isActive ? 'dark:text-white' : 'dark:text-white/65')}>{item.label}</span>
+        )}
+      </Link>
+    )
+
+    if (collapsed) {
+      return (
+        <Tooltip key={item.href} title={item.label} placement="right">
+          {link}
+        </Tooltip>
+      )
+    }
+
+    return <div key={item.href}>{link}</div>
+  }
+
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col border-r bg-[#F8FAFD] dark:bg-[#0a0a0a] h-screen sticky top-0 transition-all duration-300',
-        collapsed ? 'w-[68px]' : 'w-[240px]'
+        'sidebar-root relative z-10 hidden lg:flex flex-col shrink-0 self-stretch overflow-hidden rounded-xl border border-[#e2e8f0] bg-white my-4 ml-4 transition-[width,box-shadow] duration-300 ease-out',
+        collapsed ? 'w-[72px]' : 'w-[252px]'
       )}
     >
-      <div className={cn('flex items-center border-b h-16 px-4', collapsed ? 'justify-center' : 'justify-between')}>
-        {!collapsed && (
-          <Link href={homeHref} className="font-bold text-xl">
-            Cliently
-          </Link>
+      {/* Noise texture — subtle grain over the whole panel */}
+      <NoiseTexture
+        id="sidebar"
+        className="absolute inset-0 z-0"
+        baseFrequency={0.62}
+      />
+
+      {/* All content sits above the noise layer */}
+      <div className="relative z-[1] flex flex-1 min-h-0 flex-col">
+
+      {/* Brand header */}
+      <div
+        className={cn(
+          'flex h-[60px] shrink-0 items-center border-b border-[#e0e0e0] dark:border-[#333]',
+          collapsed ? 'justify-center px-0' : 'justify-between gap-2 px-3'
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8"
-        >
-          {collapsed ? (
-            <ChevronsRight className="h-4 w-4" />
-          ) : (
-            <ChevronsLeft className="h-4 w-4" />
-          )}
-        </Button>
+      >
+        {collapsed ? (
+          <Tooltip title="Expand sidebar" placement="right">
+            <button
+              type="button"
+              aria-label="Expand sidebar"
+              onClick={() => setCollapsed(false)}
+              className="flex h-9 w-9 mt-2 items-center justify-center rounded-lg bg-gradient-to-br from-[#5e5cc5] to-[#4a48b0] text-white shadow-sm outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#5e5cc5]/40 cursor-pointer"
+            >
+              <ChevronsRight className="h-4 w-4" strokeWidth={2.25} />
+            </button>
+          </Tooltip>
+        ) : (
+          <>
+            <Link
+              href={homeHref}
+              className="flex min-w-0 flex-1 items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-[#5e5cc5]/40 rounded-lg"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#5e5cc5] to-[#4a48b0] text-white shadow-sm">
+                <Sparkles className="h-4 w-4" strokeWidth={2.25} />
+              </span>
+              <div className="min-w-0 leading-tight">
+                <span className="block truncate text-[18px] font-bold tracking-tight text-[#18181b] dark:text-white">
+                  Cliently
+                </span>
+                {variant === 'admin' && (
+                  <span className="block truncate text-[10px] font-medium uppercase tracking-wider text-[#71717a] dark:text-white/40">
+                    Admin
+                  </span>
+                )}
+              </div>
+            </Link>
+
+            <Tooltip title="Collapse sidebar">
+              <Button
+                type="text"
+                size="small"
+                aria-label="Collapse sidebar"
+                icon={<ChevronsLeft className="h-4 w-4" />}
+                onClick={() => setCollapsed(true)}
+                className="sidebar-collapse-btn !flex !h-8 !w-8 !shrink-0 !items-center !justify-center !rounded-lg !border !border-[#e2e2e2] !bg-black/[0.04] hover:!bg-black/[0.08] dark:!border-white/[0.09] dark:!bg-white/[0.06] dark:hover:!bg-white/[0.10]"
+              />
+            </Tooltip>
+          </>
+        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-        {navItems.map((item) => {
-          const isActive = mounted && (
-            item.href === '/dashboard' || item.href === '/admin'
-              ? pathname === item.href
-              : pathname.startsWith(item.href)
-          )
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              suppressHydrationWarning
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-[#5e5cc5] text-white'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                collapsed && 'justify-center px-2'
-              )}
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          )
-        })}
+      {/* Navigation */}
+      <nav className="sidebar-nav flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+        {navGroups.map((group, groupIndex) => (
+          <div key={group.label} className={cn(groupIndex > 0 && 'mt-1')}>
+            {!collapsed && (
+              <p className="mb-1 px-3 pt-4 first:pt-1 text-[11px] font-medium uppercase tracking-[0.06em] text-[#a3a3a3] dark:text-white/30">
+                {group.label}
+              </p>
+            )}
+            {collapsed && groupIndex > 0 && (
+              <div className="mx-2 my-2 border-t border-[#e0e0e0] dark:border-[#333]" />
+            )}
+            <div className="space-y-0.5">
+              {group.items.map(renderNavLink)}
+            </div>
+          </div>
+        ))}
+
+        {/* Settings — pinned above footer */}
+        <div className={cn('mt-3 pt-1', collapsed && 'mx-0')}>
+          {!collapsed && (
+            <p className="mb-1 px-3 pt-4 text-[11px] font-medium uppercase tracking-[0.06em] text-[#a3a3a3] dark:text-white/30">
+              System
+            </p>
+          )}
+          {renderNavLink({ label: 'Settings', href: settingsHref, icon: Settings })}
+        </div>
       </nav>
 
-      <div className="border-t p-2">
-        <div className={cn('flex items-center gap-2', collapsed ? 'justify-center' : '')}>
+      {/* User footer */}
+      <div className="shrink-0 p-2">
+        <div
+          className={cn(
+            'flex items-center gap-2 rounded-xl border border-[#e8e8e8]/80 bg-black/[0.03] p-1.5 dark:border-white/[0.07] dark:bg-white/[0.04]',
+            collapsed ? 'justify-center' : ''
+          )}
+        >
           <div className={cn(collapsed ? '' : 'flex-1 min-w-0')}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    'rounded-lg',
-                    collapsed ? 'h-10 w-10 px-0 justify-center' : 'min-h-12 h-auto w-full justify-start px-2 py-1.5 min-w-0'
-                  )}
+            <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="topLeft">
+              <Button
+                type="text"
+                className={cn(
+                  '!rounded-lg dark:!text-white dark:hover:!bg-white/10',
+                  collapsed
+                    ? '!h-9 !w-9 !px-0 flex items-center justify-center'
+                    : '!min-h-10 !h-auto !w-full flex items-center !justify-start !px-1.5 !py-1 min-w-0'
+                )}
+              >
+                <Avatar
+                  src={user.avatar_url ?? undefined}
+                  size={32}
+                  className="shrink-0 ring-2 ring-white dark:ring-[#1a1a1a]"
                 >
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name ?? 'User'} />
-                    <AvatarFallback>
-                      {user.full_name ? getInitials(user.full_name) : <User className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  {!collapsed && (
-                    <div className="ml-2 flex min-w-0 flex-col items-start pr-1">
-                      <span className="w-full truncate text-sm font-medium leading-tight pr-3">{user.full_name ?? 'User'}</span>
-                      <span className="w-full truncate text-xs text-muted-foreground leading-tight">{user.email}</span>
-                    </div>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 translate-x-2">
-                <DropdownMenuItem asChild>
-                  <Link href={settingsHref} className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <form action={logoutAction} className="w-full">
-                  <DropdownMenuItem asChild>
-                    <button type="submit" className="flex w-full items-center gap-2">
-                      <LogOut className="h-4 w-4" />
-                      Log out
-                    </button>
-                  </DropdownMenuItem>
-                </form>
-                <DropdownMenuSeparator />
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  {user.email}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {user.full_name ? getInitials(user.full_name) : '?'}
+                </Avatar>
+                {!collapsed && (
+                  <div className="ml-2 flex min-w-0 flex-1 flex-col items-start text-left">
+                    <span className="w-full truncate text-[13px] font-semibold leading-tight text-[#1e293b] dark:text-white">
+                      {user.full_name ?? 'User'}
+                    </span>
+                    <span className="w-full truncate text-[11px] leading-tight text-[#64748b] dark:text-white/50">
+                      {user.email}
+                    </span>
+                  </div>
+                )}
+              </Button>
+            </Dropdown>
           </div>
 
           {!collapsed && (
-            <div className="shrink-0">
+            <div className="shrink-0 pr-0.5">
               <ThemeToggle />
             </div>
           )}
         </div>
       </div>
+
+      </div>{/* end z-[1] wrapper */}
     </aside>
   )
 }

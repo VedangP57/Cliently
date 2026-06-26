@@ -24,19 +24,148 @@ function tiptap(blocks: string[]): string {
 }
 
 async function insert(table: string, rows: Record<string, unknown>[]) {
-  const { error } = await supabase.from(table).insert(rows)
-  if (error) {
-    console.error(`✗ Failed to seed ${table}:`, error.message)
-    process.exit(1)
+  const chunkSize = 100
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize)
+    const { error } = await supabase.from(table).insert(chunk)
+    if (error) {
+      console.error(`✗ Failed to seed ${table}:`, error.message)
+      process.exit(1)
+    }
   }
   console.log(`✓ Seeded ${table} (${rows.length})`)
 }
 
+// ── Seed volume ─────────────────────────────────────────────────────────
+
+const CLIENT_COUNT = 100
+const PROJECT_COUNT = 150
+const TASK_COUNT = 400
+
+const CLIENT_STATUSES = ['active', 'inactive', 'lead', 'archived'] as const
+const PROJECT_STATUSES = ['planning', 'in_progress', 'review', 'completed', 'on_hold', 'cancelled'] as const
+const TASK_STATUSES = ['todo', 'in_progress', 'in_review', 'done'] as const
+const TASK_PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
+
+const INDUSTRIES = ['tech', 'retail', 'healthcare', 'finance', 'media', 'legal', 'education', 'food', 'sports', 'saas']
+const CITIES = [
+  { city: 'Portland', state: 'OR', zip: '97201' },
+  { city: 'Seattle', state: 'WA', zip: '98101' },
+  { city: 'San Francisco', state: 'CA', zip: '94105' },
+  { city: 'Austin', state: 'TX', zip: '78701' },
+  { city: 'Denver', state: 'CO', zip: '80202' },
+  { city: 'Chicago', state: 'IL', zip: '60606' },
+  { city: 'Boston', state: 'MA', zip: '02115' },
+  { city: 'New York', state: 'NY', zip: '10001' },
+  { city: 'Los Angeles', state: 'CA', zip: '90001' },
+  { city: 'Miami', state: 'FL', zip: '33101' },
+]
+const NAME_PREFIXES = ['North', 'Blue', 'Summit', 'Prime', 'Atlas', 'Nova', 'Peak', 'River', 'Urban', 'Clear', 'Bright', 'Silver']
+const NAME_SUFFIXES = ['Labs', 'Studio', 'Group', 'Partners', 'Collective', 'Systems', 'Media', 'Works', 'Co.', 'Ventures', 'Digital', 'Solutions']
+const PROJECT_TITLES = [
+  'Website Redesign',
+  'Mobile App MVP',
+  'Brand Identity Refresh',
+  'SEO Optimization',
+  'Content Strategy',
+  'E-commerce Platform',
+  'Social Media Campaign',
+  'Product Photography',
+  'Analytics Dashboard',
+  'Client Portal',
+  'Marketing Automation',
+  'Annual Retainer',
+]
+const TASK_TITLES = [
+  'Kickoff meeting',
+  'Requirements gathering',
+  'Wireframe review',
+  'Design iteration',
+  'Development sprint',
+  'QA testing',
+  'Client feedback round',
+  'Launch checklist',
+  'Documentation update',
+  'Performance optimization',
+]
+
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+function generateClients(userId: string, ids: string[]) {
+  return ids.map((id, index) => {
+    const prefix = NAME_PREFIXES[index % NAME_PREFIXES.length]
+    const suffix = NAME_SUFFIXES[Math.floor(index / NAME_PREFIXES.length) % NAME_SUFFIXES.length]
+    const name = `${prefix} ${suffix}`
+    const company = `${name} ${index + 1}`
+    const slug = slugify(company)
+    const location = CITIES[index % CITIES.length]
+    const industry = INDUSTRIES[index % INDUSTRIES.length]
+    const status = CLIENT_STATUSES[index % CLIENT_STATUSES.length]
+
+    return {
+      id,
+      user_id: userId,
+      name: company,
+      email: `hello@${slug}.com`,
+      phone: `(${200 + (index % 800)}) 555-${String(1000 + index).slice(-4)}`,
+      company,
+      website: `https://${slug}.com`,
+      address: `${100 + index} Main St, ${location.city}, ${location.state} ${location.zip}`,
+      status,
+      notes: `Seeded client in ${industry}. Account #${index + 1}.`,
+      tags: [industry, index % 2 === 0 ? 'recurring' : 'project'],
+      total_earned: status === 'lead' ? 0 : (index % 17) * 1250,
+    }
+  })
+}
+
+function generateProjects(userId: string, ids: string[], clientIds: string[]) {
+  return ids.map((id, index) => {
+    const clientId = clientIds[index % clientIds.length]
+    const title = `${PROJECT_TITLES[index % PROJECT_TITLES.length]} ${Math.floor(index / PROJECT_TITLES.length) + 1}`
+    const status = PROJECT_STATUSES[index % PROJECT_STATUSES.length]
+    const deadlineOffset = status === 'completed' ? -((index % 30) + 5) : (index % 60) + 7
+
+    return {
+      id,
+      user_id: userId,
+      client_id: clientId,
+      title,
+      description: `${title} for client engagement #${(index % clientIds.length) + 1}.`,
+      status,
+      deadline: deadlineOffset < 0 ? daysAgo(Math.abs(deadlineOffset)) : daysFromNow(deadlineOffset),
+      budget: 2500 + (index % 20) * 750,
+      notes: `Auto-generated project record #${index + 1}.`,
+    }
+  })
+}
+
+function generateTasks(userId: string, ids: string[], projectIds: string[]) {
+  return ids.map((id, index) => {
+    const projectId = index < ids.length - 5 ? projectIds[index % projectIds.length] : null
+    const status = TASK_STATUSES[index % TASK_STATUSES.length]
+    const dueOffset = status === 'done' ? -((index % 20) + 1) : (index % 25) + 1
+
+    return {
+      id,
+      user_id: userId,
+      project_id: projectId,
+      title: `${TASK_TITLES[index % TASK_TITLES.length]} #${index + 1}`,
+      status,
+      priority: TASK_PRIORITIES[index % TASK_PRIORITIES.length],
+      due_date: dueOffset < 0 ? daysAgo(Math.abs(dueOffset)) : daysFromNow(dueOffset),
+      position: index % 8,
+    }
+  })
+}
+
 // ── IDs (pre-generated for cross-referencing) ───────────────────────────
 
-const clientIds = Array.from({ length: 5 }, () => crypto.randomUUID())
-const projectIds = Array.from({ length: 8 }, () => crypto.randomUUID())
-const taskIds = Array.from({ length: 20 }, () => crypto.randomUUID())
+const clientIds = Array.from({ length: CLIENT_COUNT }, () => crypto.randomUUID())
+const projectIds = Array.from({ length: PROJECT_COUNT }, () => crypto.randomUUID())
+const taskIds = Array.from({ length: TASK_COUNT }, () => crypto.randomUUID())
 const proposalIds = Array.from({ length: 3 }, () => crypto.randomUUID())
 const contractIds = Array.from({ length: 2 }, () => crypto.randomUUID())
 const invoiceIds = Array.from({ length: 8 }, () => crypto.randomUUID())
@@ -86,207 +215,15 @@ async function seed() {
   console.log('✓ Updated profile')
 
   // 3. Clients
-  const clients = [
-    {
-      id: clientIds[0],
-      user_id: userId,
-      name: 'Stellar Dynamics',
-      email: 'hello@stellardynamics.io',
-      phone: '(503) 555-0142',
-      company: 'Stellar Dynamics Inc.',
-      website: 'https://stellardynamics.io',
-      address: '1200 NW Marshall St, Portland, OR 97209',
-      status: 'active',
-      notes: 'Long-term client, prefers async communication via email.',
-      tags: ['tech', 'saas', 'priority'],
-      total_earned: 18500,
-    },
-    {
-      id: clientIds[1],
-      user_id: userId,
-      name: 'Bloom & Branch Co.',
-      email: 'sarah@bloomandbranch.com',
-      phone: '(971) 555-0198',
-      company: 'Bloom & Branch Co.',
-      website: 'https://bloomandbranch.com',
-      address: '845 SE Hawthorne Blvd, Portland, OR 97214',
-      status: 'active',
-      notes: 'Boutique retail brand. Very design-conscious, values aesthetics.',
-      tags: ['retail', 'design', 'recurring'],
-      total_earned: 12300,
-    },
-    {
-      id: clientIds[2],
-      user_id: userId,
-      name: 'Neon Pixel Labs',
-      email: 'dev@neonpixel.dev',
-      phone: '(415) 555-0267',
-      company: 'Neon Pixel Labs LLC',
-      website: 'https://neonpixel.dev',
-      address: '560 Mission St, San Francisco, CA 94105',
-      status: 'lead',
-      notes: 'Referred by Stellar Dynamics. Interested in mobile app development.',
-      tags: ['tech', 'startup', 'referral'],
-      total_earned: 0,
-    },
-    {
-      id: clientIds[3],
-      user_id: userId,
-      name: 'Coastal Living Magazine',
-      email: 'editor@coastalliving.com',
-      phone: '(310) 555-0384',
-      company: 'Coastal Media Group',
-      website: 'https://coastalliving.com',
-      address: '2100 Ocean Ave, Santa Monica, CA 90405',
-      status: 'inactive',
-      notes: 'Completed their website project. May return for annual updates.',
-      tags: ['media', 'publishing'],
-      total_earned: 8700,
-    },
-    {
-      id: clientIds[4],
-      user_id: userId,
-      name: 'Redwood Ventures',
-      email: 'partnerships@redwoodvc.com',
-      phone: '(650) 555-0412',
-      company: 'Redwood Ventures Capital',
-      website: 'https://redwoodvc.com',
-      address: '3000 Sand Hill Road, Menlo Park, CA 94025',
-      status: 'active',
-      notes: 'VC firm needing portfolio company branding support.',
-      tags: ['finance', 'branding', 'high-value'],
-      total_earned: 22000,
-    },
-  ]
+  const clients = generateClients(userId, clientIds)
   await insert('clients', clients)
 
   // 4. Projects
-  const projects = [
-    {
-      id: projectIds[0],
-      user_id: userId,
-      client_id: clientIds[0],
-      title: 'Brand Identity Redesign',
-      description: 'Complete brand overhaul including logo, color palette, typography, and brand guidelines document.',
-      status: 'completed',
-      deadline: daysAgo(10),
-      budget: 12000,
-      notes: 'Client approved final deliverables on time.',
-    },
-    {
-      id: projectIds[1],
-      user_id: userId,
-      client_id: clientIds[0],
-      title: 'E-commerce Platform',
-      description: 'Build a full-featured e-commerce platform with inventory management, payment processing, and analytics dashboard.',
-      status: 'in_progress',
-      deadline: daysFromNow(30),
-      budget: 25000,
-      notes: 'Using Next.js + Stripe. Phase 2 includes mobile app.',
-    },
-    {
-      id: projectIds[2],
-      user_id: userId,
-      client_id: clientIds[1],
-      title: 'Mobile App MVP',
-      description: 'React Native app for their loyalty program. iOS and Android, push notifications, QR scanning.',
-      status: 'in_progress',
-      deadline: daysFromNow(45),
-      budget: 18000,
-      notes: 'Design approved. Development in progress.',
-    },
-    {
-      id: projectIds[3],
-      user_id: userId,
-      client_id: clientIds[1],
-      title: 'Content Strategy',
-      description: 'Develop a 6-month content calendar, blog posts, and social media strategy.',
-      status: 'planning',
-      deadline: daysFromNow(60),
-      budget: 5000,
-      notes: 'Kickoff meeting scheduled next week.',
-    },
-    {
-      id: projectIds[4],
-      user_id: userId,
-      client_id: clientIds[3],
-      title: 'Website Redesign',
-      description: 'Modern responsive redesign of their magazine website with improved article layout and subscription flow.',
-      status: 'completed',
-      deadline: daysAgo(30),
-      budget: 15000,
-      notes: 'Successfully launched. Client very satisfied.',
-    },
-    {
-      id: projectIds[5],
-      user_id: userId,
-      client_id: clientIds[4],
-      title: 'SEO Optimization',
-      description: 'Technical SEO audit, on-page optimization, and backlink strategy for portfolio company websites.',
-      status: 'review',
-      deadline: daysFromNow(7),
-      budget: 4500,
-      notes: 'Audit complete, implementing recommendations.',
-    },
-    {
-      id: projectIds[6],
-      user_id: userId,
-      client_id: clientIds[4],
-      title: 'Social Media Campaign',
-      description: 'Q2 social media campaign across LinkedIn, Twitter, and Instagram for brand awareness.',
-      status: 'on_hold',
-      deadline: daysFromNow(20),
-      budget: 3500,
-      notes: 'Paused pending budget approval from their board.',
-    },
-    {
-      id: projectIds[7],
-      user_id: userId,
-      client_id: clientIds[1],
-      title: 'Product Photography',
-      description: 'Professional product photography for new spring collection. 50 products, lifestyle and studio shots.',
-      status: 'planning',
-      deadline: daysFromNow(14),
-      budget: 2500,
-      notes: 'Studio booked for next month.',
-    },
-  ]
+  const projects = generateProjects(userId, projectIds, clientIds)
   await insert('projects', projects)
 
   // 5. Tasks
-  const tasks = [
-    // Brand Identity Redesign (completed project) — all done
-    { id: taskIds[0], user_id: userId, project_id: projectIds[0], title: 'Research competitor branding', status: 'done', priority: 'high', due_date: daysAgo(40), position: 0 },
-    { id: taskIds[1], user_id: userId, project_id: projectIds[0], title: 'Create mood board', status: 'done', priority: 'medium', due_date: daysAgo(35), position: 1 },
-    { id: taskIds[2], user_id: userId, project_id: projectIds[0], title: 'Design logo concepts', status: 'done', priority: 'high', due_date: daysAgo(25), position: 2 },
-
-    // E-commerce Platform — mixed
-    { id: taskIds[3], user_id: userId, project_id: projectIds[1], title: 'Design homepage wireframes', status: 'done', priority: 'high', due_date: daysAgo(5), position: 0 },
-    { id: taskIds[4], user_id: userId, project_id: projectIds[1], title: 'Set up CI/CD pipeline', status: 'done', priority: 'medium', due_date: daysAgo(3), position: 1 },
-    { id: taskIds[5], user_id: userId, project_id: projectIds[1], title: 'Implement product catalog', status: 'in_progress', priority: 'high', due_date: daysFromNow(5), position: 2 },
-    { id: taskIds[6], user_id: userId, project_id: projectIds[1], title: 'Integrate Stripe payments', status: 'in_progress', priority: 'urgent', due_date: daysFromNow(10), position: 3 },
-    { id: taskIds[7], user_id: userId, project_id: projectIds[1], title: 'Build admin dashboard', status: 'todo', priority: 'medium', due_date: daysFromNow(20), position: 4 },
-    { id: taskIds[8], user_id: userId, project_id: projectIds[1], title: 'Write API documentation', status: 'todo', priority: 'low', due_date: daysFromNow(25), position: 5 },
-
-    // Mobile App MVP — mixed
-    { id: taskIds[9], user_id: userId, project_id: projectIds[2], title: 'Set up React Native project', status: 'done', priority: 'high', due_date: daysAgo(7), position: 0 },
-    { id: taskIds[10], user_id: userId, project_id: projectIds[2], title: 'Design onboarding flow', status: 'in_progress', priority: 'high', due_date: daysFromNow(3), position: 1 },
-    { id: taskIds[11], user_id: userId, project_id: projectIds[2], title: 'Implement QR scanner', status: 'todo', priority: 'medium', due_date: daysFromNow(15), position: 2 },
-    { id: taskIds[12], user_id: userId, project_id: projectIds[2], title: 'Push notification integration', status: 'todo', priority: 'medium', due_date: daysFromNow(25), position: 3 },
-
-    // Content Strategy — planning
-    { id: taskIds[13], user_id: userId, project_id: projectIds[3], title: 'Audit existing content', status: 'todo', priority: 'high', due_date: daysFromNow(7), position: 0 },
-    { id: taskIds[14], user_id: userId, project_id: projectIds[3], title: 'Create editorial calendar', status: 'todo', priority: 'medium', due_date: daysFromNow(14), position: 1 },
-
-    // SEO Optimization — review
-    { id: taskIds[15], user_id: userId, project_id: projectIds[5], title: 'Run technical SEO audit', status: 'done', priority: 'high', due_date: daysAgo(3), position: 0 },
-    { id: taskIds[16], user_id: userId, project_id: projectIds[5], title: 'Fix meta tags and schema markup', status: 'in_review', priority: 'high', due_date: daysFromNow(2), position: 1 },
-    { id: taskIds[17], user_id: userId, project_id: projectIds[5], title: 'Optimize page load speed', status: 'in_review', priority: 'medium', due_date: daysFromNow(5), position: 2 },
-
-    // Social Media Campaign
-    { id: taskIds[18], user_id: userId, project_id: projectIds[6], title: 'Draft campaign brief', status: 'done', priority: 'high', due_date: daysAgo(2), position: 0 },
-    { id: taskIds[19], user_id: userId, project_id: projectIds[6], title: 'Design social media templates', status: 'in_progress', priority: 'medium', due_date: daysFromNow(8), position: 1 },
-  ]
+  const tasks = generateTasks(userId, taskIds, projectIds)
   await insert('tasks', tasks)
 
   // 6. Proposals

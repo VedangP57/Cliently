@@ -65,9 +65,9 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
   }, [])
 
   return (
-    <div className="flex h-full flex-col bg-[#F8FAFD] dark:bg-[#0a0a0a]">
-      <div className="flex items-center h-16 px-4 border-b">
-        <Link href="/dashboard" className="font-bold text-xl">
+    <div className="flex h-full flex-col bg-[#f0f0f0] dark:bg-[#3E3E3E]">
+      <div className="flex items-center h-16 px-4 border-b border-[#E0E0E0] dark:border-white/10">
+        <Link href="/dashboard" className="font-bold text-xl dark:text-white">
           Cliently
         </Link>
       </div>
@@ -87,7 +87,7 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-[#5e5cc5] text-white'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:text-white dark:hover:bg-white/10 dark:hover:text-white'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
@@ -96,12 +96,12 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
           )
         })}
       </nav>
-      <div className="border-t p-2">
+      <div className="border-t border-[#E0E0E0] p-2 dark:border-white/10">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="min-h-12 h-auto w-full min-w-0 justify-start rounded-lg px-2 py-1.5">
+                <Button variant="ghost" className="min-h-12 h-auto w-full min-w-0 justify-start rounded-lg px-2 py-1.5 dark:text-white dark:hover:bg-white/10">
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name ?? 'User'} />
                     <AvatarFallback>
@@ -109,8 +109,8 @@ export function MobileSidebar({ user }: MobileSidebarProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-1 flex min-w-0 flex-col items-start pr-1">
-                    <span className="w-full truncate text-sm font-medium leading-tight">{user.full_name ?? 'User'}</span>
-                    <span className="w-full truncate text-xs text-muted-foreground leading-tight">{user.email}</span>
+                    <span className="w-full truncate text-sm font-medium leading-tight dark:text-white">{user.full_name ?? 'User'}</span>
+                    <span className="w-full truncate text-xs text-muted-foreground leading-tight dark:text-white">{user.email}</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>

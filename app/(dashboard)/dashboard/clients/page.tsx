@@ -17,7 +17,7 @@ export default async function ClientsPage() {
   const clients = (data ?? []) as Client[]
 
   return (
-    <div className="space-y-6">
+    <div className="-m-4 lg:-m-6 min-h-full bg-[#3E3E3E] p-4 lg:p-6">
       <ClientTable clients={clients} />
     </div>
   )

@@ -48,11 +48,11 @@ export default async function DashboardLayout({
   const onboarding = await getOnboardingProgress()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen bg-[#f0f0f0] dark:bg-[#0a0a0a]">
       <Sidebar user={currentUser} />
-      <div className="flex flex-1 flex-col overflow-hidden bg-background">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#f0f0f0] dark:bg-[#0a0a0a]">
         <Topbar user={currentUser} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 lg:pb-6 bg-background">
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-6 bg-[#f0f0f0] dark:bg-[#0a0a0a]">
           {children}
         </main>
         <MobileNav />

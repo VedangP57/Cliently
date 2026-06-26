@@ -17,6 +17,15 @@ const STATUS_COLUMNS: { key: Project['status']; label: string }[] = [
   { key: 'cancelled', label: 'Cancelled' },
 ]
 
+const STATUS_ACCENT: Record<Project['status'], string> = {
+  planning:    '#5b5fc7',
+  in_progress: '#0f6cbd',
+  review:      '#835b00',
+  completed:   '#0e700e',
+  on_hold:     '#9a5b00',
+  cancelled:   '#bc2f32',
+}
+
 interface ProjectBoardViewProps {
   projects: Project[]
   clients: Client[]
@@ -28,7 +37,7 @@ export function ProjectBoardView({ projects, clients, onEdit, onDelete }: Projec
   const router = useRouter()
 
   return (
-    <div className="flex gap-4 overflow-x-auto overflow-y-hidden h-full pb-2 px-5">
+    <div className="board-view flex gap-4 overflow-x-auto overflow-y-hidden h-full pb-2 px-5">
       {STATUS_COLUMNS.map(({ key, label }) => {
         const colProjects = projects.filter(p => p.status === key)
         return (
@@ -37,7 +46,7 @@ export function ProjectBoardView({ projects, clients, onEdit, onDelete }: Projec
               <StatusBadge status={key} />
               <span className="text-xs text-muted-foreground font-medium">{colProjects.length}</span>
             </div>
-            <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto">
+            <div className="board-col-scroll flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto">
               {colProjects.length === 0 && (
                 <div className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border rounded-lg">
                   No projects
@@ -46,7 +55,8 @@ export function ProjectBoardView({ projects, clients, onEdit, onDelete }: Projec
               {colProjects.map(project => {
                 const client = clients.find(c => c.id === project.client_id)
                 return (
-                  <div key={project.id} className="bg-card border border-border rounded-lg p-3 shadow-sm">
+                  <div key={project.id} className="relative shrink-0 bg-[#f0f0f0] dark:bg-[#0a0a0a] border border-[#e6e6e6] dark:border-white/10 rounded-lg p-3 shadow-none overflow-hidden">
+                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-sm opacity-90" style={{ backgroundColor: STATUS_ACCENT[project.status] }} />
                     <Link
                       href={`/dashboard/projects/${project.id}`}
                       className="font-medium text-sm hover:underline text-[#5e5cc5] dark:text-[#a5a3e0]! block mb-1 leading-snug"

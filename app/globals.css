@@ -119,6 +119,8 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 241 42% 57%;             /* #5e5cc5 */
   --radius: 0.5rem;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.18);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.36);
 }
 
 .dark {
@@ -141,6 +143,8 @@
   --border: 0 0% 16%;              /* #292929 */
   --input: 0 0% 16%;
   --ring: 241 42% 57%;             /* #5e5cc5 */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.38);
 }
 
 @layer base {
@@ -265,26 +269,6 @@
 
 .clients-table .ant-table-body {
   height: calc(100vh - 200px) !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-}
-
-.clients-table .ant-table-body::-webkit-scrollbar {
-  display: block !important;
-  width: 5px !important;
-}
-
-.clients-table .ant-table-body::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-.clients-table .ant-table-body::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3) !important;
-  border-radius: 9999px !important;
-}
-
-.clients-table .ant-table-body::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5) !important;
 }
 
 /* Last row keeps its bottom border */
@@ -368,6 +352,34 @@
   border-radius: 50%;
 }
 
+/* Projects table — status dropdown (badge trigger + clean list menu) */
+.project-status-dropdown .ant-dropdown-menu {
+  padding: 4px !important;
+  min-width: 168px;
+}
+
+.project-status-dropdown .ant-dropdown-menu-item {
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+}
+
+.project-status-dropdown .ant-dropdown-menu-item-selected {
+  background: hsl(var(--muted) / 0.6) !important;
+}
+
+/* Projects page — compact page-size selector */
+.projects-pagination .ant-pagination-options .ant-select-selector {
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 8px !important;
+  font-size: 12px !important;
+}
+
+.projects-pagination .ant-pagination-options .ant-select-selection-item {
+  line-height: 22px !important;
+  font-size: 12px !important;
+}
+
 /* Hide scrollbar globally — outside @layer for max specificity */
 *,
 *::before,
@@ -415,8 +427,240 @@ input:-webkit-autofill:active {
   cursor: pointer !important;
 }
 
-/* Projects table — row hover highlight */
+/* Projects table — row hover highlight (matches sidebar purple tint) */
 .clients-table .ant-table-tbody .ant-table-row:hover .ant-table-cell {
-  background-color: hsl(var(--muted)) !important;
+  background-color: rgba(94, 92, 197, 0.07) !important;
 }
 
+.dark .clients-table .ant-table-tbody .ant-table-row:hover .ant-table-cell {
+  background-color: rgba(94, 92, 197, 0.12) !important;
+}
+
+.clients-table a.project-title-link:hover {
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+/* Antd table — scrollbar (placeholder, real rules are at end of file after global hide) */
+
+/* Make the table stretch to fill its card so there is no gap between
+   the last row area and the card's bottom edge (projects page) */
+.table-fill .ant-table-wrapper,
+.table-fill .ant-spin-nested-loading,
+.table-fill .ant-spin-container,
+.table-fill .ant-table,
+.table-fill .ant-table-container {
+  height: 100% !important;
+}
+
+.table-fill .ant-table-container {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.table-fill .ant-table-header {
+  flex: none;
+}
+
+.table-fill .ant-table-body {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+}
+
+/* Cap body height so it scrolls when rows overflow, shrinks when rows are fewer */
+.clients-table.table-fill .ant-table-body {
+  max-height: var(--table-body-h, auto) !important;
+}
+
+/* Stretch rows to fill available space only when there are enough rows (≥10) */
+.table-stretch .ant-table-body table {
+  min-height: 100%;
+}
+
+
+/* Board view — re-enable scrollbars (overrides global hide) */
+.board-view,
+.board-col-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent !important;
+}
+
+.board-view::-webkit-scrollbar,
+.board-col-scroll::-webkit-scrollbar {
+  display: block !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+
+.board-view::-webkit-scrollbar-track,
+.board-col-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.board-view::-webkit-scrollbar-thumb,
+.board-col-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3) !important;
+  border-radius: 9999px !important;
+}
+
+.board-view::-webkit-scrollbar-thumb:hover,
+.board-col-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5) !important;
+}
+
+/* ─── Stat cards: noise texture opacity ─── */
+
+.stat-card-noise {
+  opacity: 0.10;
+}
+
+.dark .stat-card-noise {
+  opacity: 0.35;
+}
+
+/* ─── Sidebar: noise texture opacity per theme ─── */
+
+.sidebar-root .noise-texture {
+  opacity: 0.14;
+}
+
+.dark .sidebar-root .noise-texture {
+  opacity: 0.18;
+}
+
+/* ─── Sidebar: shadow ─── */
+
+/* Light: standard right-cast depth shadow */
+.sidebar-root {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    4px 0 16px -2px rgba(15, 23, 42, 0.10),
+    14px 0 40px -6px rgba(15, 23, 42, 0.07);
+}
+
+/* Dark: shadows are invisible on near-black canvas — use clean border only */
+.dark .sidebar-root {
+  background-color: #202020;
+  border-color: #2e2e2e !important;
+  box-shadow: none;
+}
+
+/* ─── Sidebar: enterprise nav scrollbar ─── */
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2) !important;
+  border-radius: 9999px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.35) !important;
+}
+
+/* ─── Sidebar: override antd link color (defaults to brand purple on <a>) ─── */
+
+.sidebar-root a.sidebar-nav-link,
+.sidebar-root a.sidebar-nav-link:visited,
+.sidebar-root a.sidebar-nav-link .sidebar-nav-label {
+  color: #525252 !important;
+  -webkit-text-fill-color: #525252;
+  text-decoration: none !important;
+}
+
+.sidebar-root a.sidebar-nav-link:hover,
+.sidebar-root a.sidebar-nav-link:hover .sidebar-nav-label {
+  color: #171717 !important;
+  -webkit-text-fill-color: #171717;
+}
+
+.sidebar-root a.sidebar-nav-link.sidebar-active,
+.sidebar-root a.sidebar-nav-link.sidebar-active .sidebar-nav-label {
+  color: #4a48a8 !important;
+  -webkit-text-fill-color: #4a48a8;
+  font-weight: 600;
+}
+
+.dark .sidebar-active-bar {
+  box-shadow: 0 0 8px rgba(165, 163, 224, 0.6);
+}
+
+.sidebar-root .sidebar-collapse-btn,
+.sidebar-root .sidebar-collapse-btn .ant-btn-icon {
+  color: #737373 !important;
+}
+
+.dark .sidebar-root a.sidebar-nav-link,
+.dark .sidebar-root a.sidebar-nav-link:visited,
+.dark .sidebar-root a.sidebar-nav-link .sidebar-nav-label {
+  color: rgba(255, 255, 255, 0.65) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.65);
+}
+
+.dark .sidebar-root a.sidebar-nav-link:hover,
+.dark .sidebar-root a.sidebar-nav-link:hover .sidebar-nav-label {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+
+.dark .sidebar-root a.sidebar-nav-link.sidebar-active,
+.dark .sidebar-root a.sidebar-nav-link.sidebar-active .sidebar-nav-label {
+  color: #d4d2ff !important;
+  -webkit-text-fill-color: #d4d2ff;
+  font-weight: 600;
+}
+
+.dark .sidebar-root .sidebar-collapse-btn,
+.dark .sidebar-root .sidebar-collapse-btn .ant-btn-icon {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dark .sidebar-root .ant-btn,
+.dark .sidebar-root .ant-btn .ant-btn-icon,
+.dark .sidebar-root .ant-btn span {
+  color: white !important;
+}
+
+/* ─── Antd table scrollbar — hidden, inherits global *::-webkit-scrollbar none ─── */
+html .clients-table .ant-table-body {
+  overflow-y: auto !important;
+}
+
+/* ── Project Modal Noise ─────────────────────────────────── */
+.project-modal-wrapper {
+  background: linear-gradient(160deg, #fefefe 0%, #f9f9f9 100%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.dark .project-modal-wrapper {
+  background: linear-gradient(160deg, #252525 0%, #1c1c1c 60%, #191919 100%);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.75), 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.project-modal-wrapper .noise-texture {
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+}
+
+.dark .project-modal-wrapper .noise-texture {
+  opacity: 0.14;
+  mix-blend-mode: screen;
+}
+
+
+/* ─── Status text select — borderless, inherits color ─── */
+.status-text-select .ant-select-selector {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.status-text-select .ant-select-selection-item {
+  color: inherit !important;
+  font-weight: 500 !important;
+}
+.status-text-select .ant-select-arrow {
+  color: inherit !important;
+  opacity: 0.5;
+}

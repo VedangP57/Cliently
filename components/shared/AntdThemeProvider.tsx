@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ConfigProvider, theme as antdTheme } from 'antd'
+import { App, ConfigProvider, theme as antdTheme } from 'antd'
 
 const lightTheme = {
   token: {
     colorPrimary: '#5e5cc5',
     fontFamily: 'Avenir LT Pro',
     borderRadius: 6,
+    zIndexPopupBase: 2000,
     colorBgMask: 'rgba(0, 0, 0, 0.3)',
     colorBgContainer: '#ffffff',
     colorBgElevated: '#ffffff',
@@ -20,13 +21,13 @@ const lightTheme = {
     Table: {
       headerBg: '#f8fafc',
       headerColor: '#111827',
-      headerSplitColor: 'transparent',
+      headerSplitColor: '#e6e6e6',
       cellPaddingBlock: 12,
       cellPaddingBlockSM: 8,
-      rowHoverBg: '#f1f5f9',
-      rowSelectedBg: '#f1f5f9',
-      rowSelectedHoverBg: '#e2e8f0',
-      borderColor: '#e2e8f0',
+      rowHoverBg: '#f0f1fb',
+      rowSelectedBg: '#e8ebfa',
+      rowSelectedHoverBg: '#dde0f7',
+      borderColor: '#e6e6e6',
     },
     Select: {
       optionActiveBg: '#f1f5f9',
@@ -43,6 +44,7 @@ const darkTheme = {
   algorithm: antdTheme.darkAlgorithm,
   token: {
     colorPrimary: '#5e5cc5',
+    zIndexPopupBase: 2000,
     colorInfo: '#5e5cc5',
     colorLink: '#5e5cc5',
     colorLinkHover: '#7a78d4',
@@ -62,7 +64,7 @@ const darkTheme = {
     Table: {
       headerBg: '#1f1f1f',
       headerColor: '#f2f2f2',
-      headerSplitColor: 'transparent',
+      headerSplitColor: '#333333',
       cellPaddingBlock: 12,
       cellPaddingBlockSM: 8,
       rowHoverBg: '#1f1f1f',
@@ -120,7 +122,7 @@ export function AntdThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ConfigProvider theme={isDark ? darkTheme : lightTheme}>
-      {children}
+      <App>{children}</App>
     </ConfigProvider>
   )
 }

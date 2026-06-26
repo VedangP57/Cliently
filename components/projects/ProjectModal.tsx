@@ -4,11 +4,12 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { projectSchema, type ProjectFormValues } from '@/lib/validations/project'
 import { createProjectAction, updateProjectAction } from '@/lib/actions/projects'
-import { Modal, Input, Select, Button, Space, Typography } from 'antd'
+import { Modal, Input, Select, Button, Space, Typography, ConfigProvider } from 'antd'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import type { Project, Client, ProjectStatus } from '@/types'
+import { NoiseTexture } from '@/components/ui/noise-texture'
 
 const { TextArea } = Input
 const { Text } = Typography
@@ -93,6 +94,7 @@ export function ProjectModal({
   }
 
   return (
+    <ConfigProvider theme={{ components: { Modal: { contentBg: 'transparent' } } }}>
     <Modal
       open={open}
       onCancel={() => onOpenChange(false)}
@@ -103,6 +105,12 @@ export function ProjectModal({
       centered
       transitionName=""
       maskTransitionName=""
+      modalRender={(node) => (
+        <div className="project-modal-wrapper relative overflow-hidden rounded-lg">
+          <NoiseTexture id="project-modal" className="absolute inset-0 z-0" baseFrequency={0.62} />
+          <div className="relative z-[1]">{node}</div>
+        </div>
+      )}
     >
       <div className="mt-6">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -244,5 +252,6 @@ export function ProjectModal({
         </form>
       </div>
     </Modal>
+    </ConfigProvider>
   )
 }

@@ -16,7 +16,6 @@ import {
 } from 'antd'
 import { NoiseTexture } from '@/components/ui/noise-texture'
 import { ProjectModal } from '@/components/projects/ProjectModal'
-import { ProjectStatusSelect } from '@/components/projects/ProjectStatusSelect'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { deleteProjectAction, bulkUpdateStatusAction, bulkDeleteProjectsAction } from '@/lib/actions/projects'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -49,7 +48,7 @@ const PROJECT_STATUS_OPTIONS = [
   { label: 'Cancelled', value: 'cancelled' },
 ]
 
-const TABLE_DENSITY_THEME = { components: { Table: { cellPaddingBlockSM: 2 } } } as const
+const TABLE_DENSITY_THEME = { components: { Table: { cellPaddingBlockSM: 8 } } } as const
 
 export function ProjectTable({ projects, clients }: ProjectTableProps) {
   const [search, setSearch] = useState('')
@@ -183,6 +182,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
     setModalOpen(true)
   }
 
+
   async function handleStatusChange(projectId: string, status: string) {
     setUpdatingStatusId(projectId)
     const result = await bulkUpdateStatusAction([projectId], status)
@@ -306,16 +306,32 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       dataIndex: 'status',
       key: 'status',
       align: 'center',
-      width: 150,
-      render: (status: Project['status'], record) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <ProjectStatusSelect
-            status={status}
-            loading={updatingStatusId === record.id}
-            onChange={(value) => handleStatusChange(record.id, value)}
-          />
-        </div>
-      ),
+      width: 140,
+      render: (status: Project['status'], record) => {
+        const STATUS_COLORS: Record<string, string> = {
+          planning: '#5b5fc7',
+          in_progress: '#0f6cbd',
+          review: '#835b00',
+          completed: '#0e700e',
+          on_hold: '#9a5b00',
+          cancelled: '#bc2f32',
+        }
+        const color = STATUS_COLORS[status] ?? '#888'
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <AntdSelect
+              variant="borderless"
+              size="small"
+              value={status}
+              loading={updatingStatusId === record.id}
+              onChange={(value) => handleStatusChange(record.id, value)}
+              style={{ color, fontWeight: 500, minWidth: 120 }}
+              options={PROJECT_STATUS_OPTIONS}
+              className="status-text-select"
+            />
+          </div>
+        )
+      },
     },
     {
       title: 'Deadline',
@@ -454,7 +470,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
       </div>
 
       {/* Stat cards */}
-      <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-2 px-5 pb-2">
+      <div className="shrink-0 grid grid-cols-3 sm:grid-cols-6 gap-2 px-5 pb-3 pt-1">
         {[
           { label: 'Planning',    count: planningCount,   value: 'planning',    hex: '#5b5fc7', bg: '#ecebfb' },
           { label: 'In Progress', count: inProgressCount, value: 'in_progress', hex: '#0f6cbd', bg: '#eaf2fb' },
@@ -501,8 +517,7 @@ export function ProjectTable({ projects, clients }: ProjectTableProps) {
               <Table<Project>
                 columns={columns}
                 dataSource={paginatedData}
-                rowKey="id"
-                bordered
+                rowKey="id" 
                 size="small"
                 pagination={false}
                 scroll={{ x: 800, y: tableScrollY }}

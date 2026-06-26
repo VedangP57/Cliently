@@ -136,6 +136,7 @@ export function ClientTable({ clients }: ClientTableProps) {
       dataIndex: 'email',
       key: 'email',
       align: 'center',
+      ellipsis: true,
       render: (text) => text || '—',
     },
     {
@@ -221,13 +222,14 @@ export function ClientTable({ clients }: ClientTableProps) {
             />
           </div>
 
-          <AntdSelect
-            className="w-[130px] h-8 select-rounded-full"
+          <AntdSelect<StatusFilter>
+            className="w-[130px] select-rounded-full"
+            size="small"
             value={statusFilter}
-            onChange={(value: StatusFilter) => setStatusFilter(value)}
-            optionFilterProp="label"
+            onChange={setStatusFilter}
             options={STATUS_OPTIONS}
-            classNames={{ popup: { root: 'clients-status-select-dropdown' } }}
+            showSearch={false}
+            virtual={false}
           />
 
           <AntdButton
@@ -271,7 +273,7 @@ export function ClientTable({ clients }: ClientTableProps) {
           )}
         </EmptyState>
       ) : (
-        <div className="user-table">
+        <div className="user-table clients-table">
           <Table<Client>
             rowSelection={rowSelection}
             columns={columns}
@@ -280,13 +282,13 @@ export function ClientTable({ clients }: ClientTableProps) {
             bordered
             size="small"
             pagination={{
-              pageSize: 10,
-              showSizeChanger: false,
-              hideOnSinglePage: true,
+              defaultPageSize: 20,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showSizeChanger: true,
+              showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total}`,
               placement: 'bottomCenter',
-              className: 'ant-pagination-mini',
             } as any}
-            scroll={{ x: 800 }}
+            scroll={{ x: 800, y: 'calc(100vh - 200px)' }}
           />
         </div>
       )}

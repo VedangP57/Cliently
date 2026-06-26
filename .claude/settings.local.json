@@ -16,7 +16,9 @@
       "Bash(bunx next:*)",
       "Bash(bun:*)",
       "Read(//Users/sarvadhisolution/.claude/plugins/**)",
-      "Read(//Users/sarvadhisolution/.claude/plugins/cache/claude-plugins-official/**)"
+      "Read(//Users/sarvadhisolution/.claude/plugins/cache/claude-plugins-official/**)",
+      "Bash(git show *)",
+      "Read(//tmp/**)"
     ]
   },
   "enableAllProjectMcpServers": true,

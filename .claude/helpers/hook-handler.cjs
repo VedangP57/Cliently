@@ -145,15 +145,20 @@ const handlers = {
 
   'pre-bash': () => {
     // Basic command safety check — prefer stdin command data from Claude Code
-    const cmd = (hookInput.command || prompt).toLowerCase();
+    const cmd = String(hookInput.command || toolInput.command || prompt || '').toLowerCase();
     const dangerous = ['rm -rf /', 'format c:', 'del /s /q c:\\', ':(){:|:&};:'];
     for (const d of dangerous) {
       if (cmd.includes(d)) {
-        console.error(`[BLOCKED] Dangerous command detected: ${d}`);
-        process.exit(1);
+        process.stderr.write(`[BLOCKED] Dangerous command detected: ${d}\n`);
+        process.stdout.write(JSON.stringify({ continue: false, stopReason: `Dangerous command detected: ${d}` }) + '\n');
+        process.exit(0);
       }
     }
-    console.log('[OK] Command validated');
+    process.stdout.write(JSON.stringify({ continue: true }) + '\n');
+  },
+
+  'pre-edit': () => {
+    process.stdout.write(JSON.stringify({ continue: true }) + '\n');
   },
 
   'post-edit': () => {
@@ -258,11 +263,20 @@ const handlers = {
       await Promise.resolve(handlers[command]());
     } catch (e) {
       // Hooks should never crash Claude Code - fail silently
-      console.log(`[WARN] Hook ${command} encountered an error: ${e.message}`);
+      process.stderr.write(`[WARN] Hook ${command} encountered an error: ${e.message}\n`);
+      const preToolUseCmds = ['pre-bash', 'pre-edit'];
+      if (preToolUseCmds.includes(command)) {
+        process.stdout.write(JSON.stringify({ continue: true }) + '\n');
+      }
     }
   } else if (command) {
-    // Unknown command - pass through without error
-    console.log(`[OK] Hook: ${command}`);
+    // For PreToolUse hooks output JSON; others get plain text
+    const preToolUseCmds = ['pre-bash', 'pre-edit'];
+    if (preToolUseCmds.includes(command)) {
+      process.stdout.write(JSON.stringify({ continue: true }) + '\n');
+    } else {
+      console.log(`[OK] Hook: ${command}`);
+    }
   } else {
     console.log('Usage: hook-handler.cjs <route|pre-bash|post-edit|session-restore|session-end|pre-task|post-task|stats>');
   }
